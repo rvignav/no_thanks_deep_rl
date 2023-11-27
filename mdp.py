@@ -49,14 +49,7 @@ def build_nothanks_mdp(N, K, pi_2):
     S = N * K * K * (2 ** N) * (2 ** N)
     A = 2 # 0 = take card, 1 = pass
     
-    """
-    TODOS
-    - Handle case when no remaining cards (go to zero reward terminal state)
-    - Handle case when k1 = 0 (go to negative infinity reward dummy state)
-    - When k2 = 0 just force player 2 to take card
-    """
-    
-	P = np.zeros([A, S, S])
+	P = np.zeros([A, S+2, S+2])
     for c in range(N):
         for k1 in range(K):
             for k2 in range(K):
@@ -65,12 +58,18 @@ def build_nothanks_mdp(N, K, pi_2):
                         # take card
                         i1 = get_index(c, k1, k2, s1, s2)
                         remaining_cards = range(N) - get_subset(s1, N) - get_subset(s2, N)
+                        if len(remaining_cards) == 0:
+                            P[0, i1, S+1] = 1
+                            continue
                         for card in remaining_cards:
                             new_s1 = get_subset_index(get_subset(s1, N) + [card])
                             i2 = get_index(card, K-k2, k2, new_s1, s2)
                             a = pi_2(i2)
-                            if a == 0:
+                            if a == 0 or k2 == 0:
                                 new_remaining_cards = range(N) - get_subset(new_s1, N) - get_subset(s2, N)
+                                if len(new_remaining_cards) == 0:
+                                    P[0, i1, S+1] = 1
+                                    continue
                                 for card2 in new_remaining_cards:
                                     new_s2 = get_subset_index(get_subset(s2, N) + [card2])
                                     i3 = get_index(card, K-k2, k2, new_s1, new_s2)
@@ -79,17 +78,26 @@ def build_nothanks_mdp(N, K, pi_2):
                                 P[0, i1, get_index(card, K-k2, k2-1, new_s1, s2)] = 1 / len(remaining_cards)
                         
                         # pass
-                        i2 = get_index(c, k1-1, k2, s1, s2)
-                        a = pi_2(i2)
-                        if a == 0:
-                            remaining_cards = range(N) - get_subset(s1, N) - get_subset(s2, N)
-                            for card in new_remaining_cards:
-                                new_s2 = get_subset_index(get_subset(s2, N) + [card])
-                                i3 = get_index(card, k1-1, K-(k1-1), s1, new_s2)
-                                P[0, i1, i3] = 1 / len(remaining_cards)
+                        if k1 == 0:
+                            P[1, i1, S] = 1
                         else:
                             i2 = get_index(c, k1-1, k2, s1, s2)
-                            P[1, i1, i2] = 1
+                            a = pi_2(i2)
+                            if a == 0 or k2 == 0:
+                                remaining_cards = range(N) - get_subset(s1, N) - get_subset(s2, N)
+                                if len(remaining_cards) == 0:
+                                    P[0, i1, S+1] = 1
+                                    continue
+                                for card in remaining_cards:
+                                    new_s2 = get_subset_index(get_subset(s2, N) + [card])
+                                    i3 = get_index(card, k1-1, K-(k1-1), s1, new_s2)
+                                    P[0, i1, i3] = 1 / len(remaining_cards)
+                            else:
+                                i2 = get_index(c, k1-1, k2, s1, s2)
+                                P[1, i1, i2] = 1
+
+    P[0, S+1, S+1] = 1
+    P[1, S+1, S+1] = 1
 
 	# Reward function: |A| x |S| array
 	R = np.zeros([A, S])
@@ -101,6 +109,12 @@ def build_nothanks_mdp(N, K, pi_2):
                 for s1 in range(2**n):
                     for s2 in range(2**n):
                         R[0, get_index(c, k1, k2, s1, s2)] = K - k1 - k2 - c
+    
+    R[0, S] = -np.inf
+    R[1, S] = -np.inf
+    
+    R[0, S+1] = 0
+    R[1, S+1] = 0
 
 	# Time horizon
 	H = N * (K/2 + 1)
