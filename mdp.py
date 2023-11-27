@@ -25,274 +25,75 @@ class MDP:
 	def isTerminal(self, state):
 		return state == self.nStates-1 # last state is dummy state denoting end of game
 
-def build_nothanks_mdp(N, K):
+def get_index(c, k1, k2, s1, s2):
+    return c * K * K * (2 ** N) * (2 ** N) + k1 * K * (2 ** N) * (2 ** N) + k2 * (2 ** N) * (2 ** N) + s1 * (2 ** N) + s2
+
+def get_subset(index, N):
+    # map number in range [0, 2^N - 1] to subset of {0, ..., N-1}
+    subset = []
+    for i in range(N):
+        if index % 2 == 1:
+            subset.append(i)
+        index = index // 2
+    return subset
+
+def get_subset_index(subset, N):
+    # map subset of {0, ..., N-1} to number in range [0, 2^N - 1]
+    index = 0
+    for i in subset:
+        index += 2 ** i
+    return index
+
+def build_nothanks_mdp(N, K, pi_2):
 	# Transition function: |A| x |S| x |S'| array
-	P = np.zeros([4, 17, 17])
-	a = 0.8;  # intended move
-	b = 0.1;  # lateral move
-
-	# up (a = 0)
-
-	P[0, 0, 0] = a + b;
-	P[0, 0, 1] = b;
-
-	P[0, 1, 0] = b;
-	P[0, 1, 1] = a;
-	P[0, 1, 2] = b;
-
-	P[0, 2, 1] = b;
-	P[0, 2, 2] = a;
-	P[0, 2, 3] = b;
-
-	P[0, 3, 2] = b;
-	P[0, 3, 3] = a + b;
-
-	P[0, 4, 4] = b;
-	P[0, 4, 0] = a;
-	P[0, 4, 5] = b;
-
-	P[0, 5, 4] = b;
-	P[0, 5, 1] = a;
-	P[0, 5, 6] = b;
-
-	P[0, 6, 5] = b;
-	P[0, 6, 2] = a;
-	P[0, 6, 7] = b;
-
-	P[0, 7, 6] = b;
-	P[0, 7, 3] = a;
-	P[0, 7, 7] = b;
-
-	P[0, 8, 8] = b;
-	P[0, 8, 4] = a;
-	P[0, 8, 9] = b;
-
-	P[0, 9, 8] = b;
-	P[0, 9, 5] = a;
-	P[0, 9, 10] = b;
-
-	P[0, 10, 9] = b;
-	P[0, 10, 6] = a;
-	P[0, 10, 11] = b;
-
-	P[0, 11, 10] = b;
-	P[0, 11, 7] = a;
-	P[0, 11, 11] = b;
-
-	P[0, 12, 12] = b;
-	P[0, 12, 8] = a;
-	P[0, 12, 13] = b;
-
-	P[0, 13, 12] = b;
-	P[0, 13, 9] = a;
-	P[0, 13, 14] = b;
-
-	P[0, 14, 13] = b;
-	P[0, 14, 10] = a;
-	P[0, 14, 15] = b;
-
-	P[0, 15, 16] = 1;
-	P[0, 16, 16] = 1;
-
-	# down (a = 1)
-
-	P[1, 0, 0] = b;
-	P[1, 0, 4] = a;
-	P[1, 0, 1] = b;
-
-	P[1, 1, 0] = b;
-	P[1, 1, 5] = a;
-	P[1, 1, 2] = b;
-
-	P[1, 2, 1] = b;
-	P[1, 2, 6] = a;
-	P[1, 2, 3] = b;
-
-	P[1, 3, 2] = b;
-	P[1, 3, 7] = a;
-	P[1, 3, 3] = b;
-
-	P[1, 4, 4] = b;
-	P[1, 4, 8] = a;
-	P[1, 4, 5] = b;
-
-	P[1, 5, 4] = b;
-	P[1, 5, 9] = a;
-	P[1, 5, 6] = b;
-
-	P[1, 6, 5] = b;
-	P[1, 6, 10] = a;
-	P[1, 6, 7] = b;
-
-	P[1, 7, 6] = b;
-	P[1, 7, 11] = a;
-	P[1, 7, 7] = b;
-
-	P[1, 8, 8] = b;
-	P[1, 8, 12] = a;
-	P[1, 8, 9] = b;
-
-	P[1, 9, 8] = b;
-	P[1, 9, 13] = a;
-	P[1, 9, 10] = b;
-
-	P[1, 10, 9] = b;
-	P[1, 10, 14] = a;
-	P[1, 10, 11] = b;
-
-	P[1, 11, 10] = b;
-	P[1, 11, 15] = a;
-	P[1, 11, 11] = b;
-
-	P[1, 12, 12] = a + b;
-	P[1, 12, 13] = b;
-
-	P[1, 13, 12] = b;
-	P[1, 13, 13] = a;
-	P[1, 13, 14] = b;
-
-	P[1, 14, 13] = b;
-	P[1, 14, 14] = a;
-	P[1, 14, 15] = b;
-
-	P[1, 15, 16] = 1;
-	P[1, 16, 16] = 1;
-
-	# left (a = 2)
-
-	P[2, 0, 0] = a + b;
-	P[2, 0, 4] = b;
-
-	P[2, 1, 1] = b;
-	P[2, 1, 0] = a;
-	P[2, 1, 5] = b;
-
-	P[2, 2, 2] = b;
-	P[2, 2, 1] = a;
-	P[2, 2, 6] = b;
-
-	P[2, 3, 3] = b;
-	P[2, 3, 2] = a;
-	P[2, 3, 7] = b;
-
-	P[2, 4, 0] = b;
-	P[2, 4, 4] = a;
-	P[2, 4, 8] = b;
-
-	P[2, 5, 1] = b;
-	P[2, 5, 4] = a;
-	P[2, 5, 9] = b;
-
-	P[2, 6, 2] = b;
-	P[2, 6, 5] = a;
-	P[2, 6, 10] = b;
-
-	P[2, 7, 3] = b;
-	P[2, 7, 6] = a;
-	P[2, 7, 11] = b;
-
-	P[2, 8, 4] = b;
-	P[2, 8, 8] = a;
-	P[2, 8, 12] = b;
-
-	P[2, 9, 5] = b;
-	P[2, 9, 8] = a;
-	P[2, 9, 13] = b;
-
-	P[2, 10, 6] = b;
-	P[2, 10, 9] = a;
-	P[2, 10, 14] = b;
-
-	P[2, 11, 7] = b;
-	P[2, 11, 10] = a;
-	P[2, 11, 15] = b;
-
-	P[2, 12, 8] = b;
-	P[2, 12, 12] = a + b;
-
-	P[2, 13, 9] = b;
-	P[2, 13, 12] = a;
-	P[2, 13, 13] = b;
-
-	P[2, 14, 10] = b;
-	P[2, 14, 13] = a;
-	P[2, 14, 14] = b;
-
-	P[2, 15, 16] = 1;
-	P[2, 16, 16] = 1;
-
-	# right (a = 3)
-
-	P[3, 0, 0] = b;
-	P[3, 0, 1] = a;
-	P[3, 0, 4] = b;
-
-	P[3, 1, 1] = b;
-	P[3, 1, 2] = a;
-	P[3, 1, 5] = b;
-
-	P[3, 2, 2] = b;
-	P[3, 2, 3] = a;
-	P[3, 2, 6] = b;
-
-	P[3, 3, 3] = a + b;
-	P[3, 3, 7] = b;
-
-	P[3, 4, 0] = b;
-	P[3, 4, 5] = a;
-	P[3, 4, 8] = b;
-
-	P[3, 5, 1] = b;
-	P[3, 5, 6] = a;
-	P[3, 5, 9] = b;
-
-	P[3, 6, 2] = b;
-	P[3, 6, 7] = a;
-	P[3, 6, 10] = b;
-
-	P[3, 7, 3] = b;
-	P[3, 7, 7] = a;
-	P[3, 7, 11] = b;
-
-	P[3, 8, 4] = b;
-	P[3, 8, 9] = a;
-	P[3, 8, 12] = b;
-
-	P[3, 9, 5] = b;
-	P[3, 9, 10] = a;
-	P[3, 9, 13] = b;
-
-	P[3, 10, 6] = b;
-	P[3, 10, 11] = a;
-	P[3, 10, 14] = b;
-
-	P[3, 11, 7] = b;
-	P[3, 11, 11] = a;
-	P[3, 11, 15] = b;
-
-	P[3, 12, 8] = b;
-	P[3, 12, 13] = a;
-	P[3, 12, 12] = b;
-
-	P[3, 13, 9] = b;
-	P[3, 13, 14] = a;
-	P[3, 13, 13] = b;
-
-	P[3, 14, 10] = b;
-	P[3, 14, 15] = a;
-	P[3, 14, 14] = b;
-
-	P[3, 15, 16] = 1;
-	P[3, 16, 16] = 1;
+    S = N * K * K * (2 ** N) * (2 ** N)
+    A = 2 # 0 = take card, 1 = pass
+    
+	P = np.zeros([A, S, S])
+    for c in range(N):
+        for k1 in range(K):
+            for k2 in range(K):
+                for s1 in range(2**n):
+                    for s2 in range(2**n):
+                        # take card
+                        i1 = get_index(c, k1, k2, s1, s2)
+                        remaining_cards = range(N) - get_subset(s1, N) - get_subset(s2, N)
+                        for card in remaining_cards:
+                            new_s1 = get_subset_index(get_subset(s1, N) + [card])
+                            i2 = get_index(card, K-k2, k2, new_s1, s2)
+                            a = pi_2(i2)
+                            if a == 0:
+                                new_remaining_cards = range(N) - get_subset(new_s1, N) - get_subset(s2, N)
+                                for card2 in new_remaining_cards:
+                                    new_s2 = get_subset_index(get_subset(s2, N) + [card2])
+                                    i3 = get_index(card, K-k2, k2, new_s1, new_s2)
+                                    P[0, i1, i3] = 1 / (len(remaining_cards) * len(new_remaining_cards))
+                            else:
+                                P[0, i1, get_index(card, K-k2, k2-1, new_s1, s2)] = 1 / len(remaining_cards)
+                        
+                        # pass
+                        i2 = get_index(c, k1-1, k2, s1, s2)
+                        a = pi_2(i2)
+                        if a == 0:
+                            remaining_cards = range(N) - get_subset(s1, N) - get_subset(s2, N)
+                            for card in new_remaining_cards:
+                                new_s2 = get_subset_index(get_subset(s2, N) + [card])
+                                i3 = get_index(card, k1-1, K-(k1-1), s1, new_s2)
+                                P[0, i1, i3] = 1 / len(remaining_cards)
+                        else:
+                            i2 = get_index(c, k1-1, k2, s1, s2)
+                            P[1, i1, i2] = 1
 
 	# Reward function: |A| x |S| array
-	R = -1 * np.ones([4, 17]);
+	R = np.zeros([A, S])
 
 	# set rewards
-	R[:, 15] = 100;  # goal state
-	R[:, 9] = -70;  # bad state
-	R[:, 5] = -70;  # bad state
-	R[:, 16] = 0;  # end state
+	for c in range(N):
+        for k1 in range(K):
+            for k2 in range(K):
+                for s1 in range(2**n):
+                    for s2 in range(2**n):
+                        R[0, get_index(c, k1, k2, s1, s2)] = K - k1 - k2 - c
 
 	# Time horizon
 	H = N * (K/2 + 1)
