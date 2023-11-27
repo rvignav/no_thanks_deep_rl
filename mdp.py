@@ -49,6 +49,13 @@ def build_nothanks_mdp(N, K, pi_2):
     S = N * K * K * (2 ** N) * (2 ** N)
     A = 2 # 0 = take card, 1 = pass
     
+    """
+    TODOS
+    - Handle case when no remaining cards (go to zero reward terminal state)
+    - Handle case when k1 = 0 (go to negative infinity reward dummy state)
+    - When k2 = 0 just force player 2 to take card
+    """
+    
 	P = np.zeros([A, S, S])
     for c in range(N):
         for k1 in range(K):
