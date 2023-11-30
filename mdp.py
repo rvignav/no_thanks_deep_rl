@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class MDP:
-    def __init__(self, idx2state, state2idx, N, K, P, R, discount):
+    def __init__(self, idx2state, state2idx, N, K, P, R, H):
         """
         The constructor verifies that the inputs are valid and sets
         corresponding variables in a MDP object
@@ -10,7 +10,8 @@ class MDP:
         :param R: Reward function: |A| x |S| array
         :param H: time horizon: natural number
         """
-        self.idx2state = idx2state
+        self.idx2state = idx2state # maps number to tuple of form (c, k1, k2, s1, s2) where c is current face-up 
+                                   # card, k1 is # tokens p1 has, k2 analogous, s1 is player 1's subset index, s2 analogous
         self.state2idx = state2idx
         self.N = N
         self.K = K
@@ -25,8 +26,8 @@ class MDP:
         assert R.ndim == 2, "Invalid reward function: it should have 2 dimensions"
         assert R.shape == (self.nActions, self.nStates), "Invalid reward function: it has dimensionality " + repr(R.shape) + ", but it should be (nActions,nStates)"
         self.R = R
-        assert 0 <= discount and discount <= 1, "Invalid discount"
-        self.discount = discount
+        assert H >= 1, "Invalid time horizon"
+        self.H = H
 
     def isTerminal(self, state):
         return state == self.nStates-1 # last state is dummy state denoting end of game
@@ -138,12 +139,56 @@ def build_nothanks_mdp(N, K, pi_2):
     R[1, S+1] = 0
 
     # Discount factor
-    discount = 1
+    H = N*(K/2+1)
 
     # MDP object
-    mdp = MDP(idx2state, state2idx, N, K, P, R, discount)
+    mdp = MDP(idx2state, state2idx, N, K, P, R, H)
     return mdp
 
+def simulate(N, K, pi_1, pi_2):
+    trajectory = []
+    c = np.random.randint(N)
+    curr_state = (c, K/2, K/2, 0, 0)
+    trajectory = [curr_state]
+    while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
+        if curr_state[1] == 0:
+            a = 0
+        else:
+            a = pi_1(curr_state)
+                    
+        trajectory.append(a)
+        
+        if a == 0:
+            remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+            card = remaining_cards[np.random.randint(0, len(remaining_cards))]
+            reward = K - curr_state[1] - curr_state[2] - curr_state[0]
+            curr_state = (card, K-curr_state[2], curr_state[2], get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N), curr_state[4])
+        else:
+            curr_state = (curr_state[0], curr_state[1]-1, curr_state[2], curr_state[3], curr_state[4])
+            reward = 0
+        
+        trajectory.append(reward)
+        
+        if curr_state[2] == 0:
+            a = 0
+        else:
+            a = pi_2(curr_state)
+                        
+        if a == 0:
+            remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+            if len(remaining_cards) == 0:
+                break
+            card = remaining_cards[np.random.randint(0, len(remaining_cards))]
+            curr_state = (card, curr_state[1], K-curr_state[1], curr_state[3], get_subset_index(get_subset(curr_state[4],N)+[curr_state[0]],N))
+        else:
+            curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
+        
+        trajectory.append(curr_state)
+                 
+    if len(trajectory) % 3 == 1:
+        trajectory = trajectory[:-1]
+    return trajectory
+        
 if __name__ == "__main__":
     N = 3
     K = 2
@@ -151,3 +196,4 @@ if __name__ == "__main__":
     print("Testing MDP gen with dummy player 2 policy")
     mdp = build_nothanks_mdp(N, K, pi_2)
     print("Succeeded")
+    print(simulate(N, K, lambda s: 1, lambda s: 0))
