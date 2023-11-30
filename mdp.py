@@ -53,6 +53,22 @@ def get_subset_index(subset, N):
 for i in range(2**3):
     assert get_subset_index(get_subset(i, 3), 3) == i
 
+def calc_S(N, K):
+    state2idx = {}
+    i = 0
+
+    for c in range(N):
+        for k1 in range(K+1):
+            for k2 in range(K+1):
+                for s1 in range(2**N):
+                    for s2 in range(2**N):
+                        if c in get_subset(s1, N) or c in get_subset(s2, N):
+                            continue
+                        state2idx[(c, k1, k2, s1, s2)] = i
+                        i += 1
+                    
+    return len(state2idx)
+
 def build_nothanks_mdp(N, K, pi_2):
     state2idx = {}
     idx2state = {}
@@ -86,7 +102,7 @@ def build_nothanks_mdp(N, K, pi_2):
             for card in remaining_cards:
                 new_s1 = get_subset_index(get_subset(s1, N) + [c], N)
                 sprime = state2idx[(card, K-k2, k2, new_s1, s2)]
-                a = pi_2(sprime)
+                a = pi_2[sprime]
                 if a == 0 or k2 == 0:
                     new_remaining_cards = list(set([i for i in range(N)]) - set(get_subset(new_s1, N)) - set(get_subset(s2, N)) - set([card]))
                     if len(new_remaining_cards) == 0:
@@ -104,7 +120,7 @@ def build_nothanks_mdp(N, K, pi_2):
             P[1, s, S] = 1
         else:
             sprime = state2idx[(c, k1-1, k2, s1, s2)]
-            a = pi_2(sprime)
+            a = pi_2[sprime]
             if a == 0 or k2 == 0:
                 remaining_cards = list(set([i for i in range(N)]) - set(get_subset(s1, N)) - set(get_subset(s2, N)) - set([c]))
                 if len(remaining_cards) == 0:
@@ -154,7 +170,7 @@ def simulate(N, K, pi_1, pi_2):
         if curr_state[1] == 0:
             a = 0
         else:
-            a = pi_1(curr_state)
+            a = pi_1[curr_state]
                     
         trajectory.append(a)
         
@@ -172,7 +188,7 @@ def simulate(N, K, pi_1, pi_2):
         if curr_state[2] == 0:
             a = 0
         else:
-            a = pi_2(curr_state)
+            a = pi_2[curr_state]
                         
         if a == 0:
             remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
@@ -192,8 +208,8 @@ def simulate(N, K, pi_1, pi_2):
 if __name__ == "__main__":
     N = 3
     K = 2
-    pi_2 = lambda s: 0
+    pi_2 = [0]*calc_S(N, K)
     print("Testing MDP gen with dummy player 2 policy")
     mdp = build_nothanks_mdp(N, K, pi_2)
     print("Succeeded")
-    print(simulate(N, K, lambda s: 1, lambda s: 0))
+    print(simulate(N, K, [1]*calc_S(N, K), p_2))
