@@ -187,7 +187,7 @@ def simulate(N, K, pi_1, pi_2):
                  
     if len(trajectory) % 3 == 1:
         trajectory = trajectory[:-1]
-    return trajectory
+    return trajectory # (s_0, a_0, r_0, s_1, a_1, r_1, ..., s_n, a_n, r_n)
         
 if __name__ == "__main__":
     N = 3
