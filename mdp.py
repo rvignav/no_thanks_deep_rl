@@ -154,7 +154,7 @@ def build_nothanks_mdp(N, K, pi_2):
     R[0, S+1] = 0
     R[1, S+1] = 0
 
-    # Discount factor
+    # Time horizon
     H = N*(K/2+1)
 
     # MDP object
