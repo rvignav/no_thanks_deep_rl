@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class MDP:
-    def __init__(self, idx2state, state2idx, N, K, P, R, H):
+    def __init__(self, idx2state, state2idx, N, K, P, R, H, num_states):
         """
         The constructor verifies that the inputs are valid and sets
         corresponding variables in a MDP object
@@ -15,6 +15,7 @@ class MDP:
         self.state2idx = state2idx
         self.N = N
         self.K = K
+        self.num_states = len(idx2state)
         
         assert P.ndim == 3, "Invalid transition function: it should have 3 dimensions"
         self.nActions = P.shape[0]
@@ -150,52 +151,55 @@ def build_nothanks_mdp(N, K, pi_2):
     mdp = MDP(idx2state, state2idx, N, K, P, R, H)
     return mdp
 
-def simulate(N, K, pi_1, pi_2):
-    trajectory = []
-    c = np.random.randint(N)
-    curr_state = (c, K/2, K/2, 0, 0)
-    trajectory = [curr_state]
-    
-    state2idx, idx2state = get_mappings(N, K)
-    
-    while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
-        if curr_state[1] == 0:
-            a = 0
-        else:
-            a = pi_1[state2idx[curr_state]]
-                    
-        trajectory.append(a)
+def simulate(N, K, pi_1, pi_2, num_trajectories):
+    trajs = []
+    for _ in range(num_trajectories):
+        trajectory = []
+        c = np.random.randint(N)
+        curr_state = (c, K/2, K/2, 0, 0)
+        trajectory = [curr_state]
         
-        if a == 0:
-            remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
-            card = remaining_cards[np.random.randint(0, len(remaining_cards))]
-            reward = K - curr_state[1] - curr_state[2] - curr_state[0]
-            curr_state = (card, K-curr_state[2], curr_state[2], get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N), curr_state[4])
-        else:
-            curr_state = (curr_state[0], curr_state[1]-1, curr_state[2], curr_state[3], curr_state[4])
-            reward = 0
+        state2idx, idx2state = get_mappings(N, K)
         
-        trajectory.append(reward)
-        
-        if curr_state[2] == 0:
-            a = 0
-        else:
-            a = pi_2[state2idx[curr_state]]
+        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
+            if curr_state[1] == 0:
+                a = 0
+            else:
+                a = pi_1[state2idx[curr_state]]
                         
-        if a == 0:
-            remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
-            if len(remaining_cards) == 0:
-                break
-            card = remaining_cards[np.random.randint(0, len(remaining_cards))]
-            curr_state = (card, curr_state[1], K-curr_state[1], curr_state[3], get_subset_index(get_subset(curr_state[4],N)+[curr_state[0]],N))
-        else:
-            curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
-        
-        trajectory.append(curr_state)
-                 
-    if len(trajectory) % 3 == 1:
-        trajectory = trajectory[:-1]
-    return trajectory # (s_0, a_0, r_0, s_1, a_1, r_1, ..., s_n, a_n, r_n)
+            trajectory.append(a)
+            
+            if a == 0:
+                remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                card = remaining_cards[np.random.randint(0, len(remaining_cards))]
+                reward = K - curr_state[1] - curr_state[2] - curr_state[0]
+                curr_state = (card, K-curr_state[2], curr_state[2], get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N), curr_state[4])
+            else:
+                curr_state = (curr_state[0], curr_state[1]-1, curr_state[2], curr_state[3], curr_state[4])
+                reward = 0
+            
+            trajectory.append(reward)
+            
+            if curr_state[2] == 0:
+                a = 0
+            else:
+                a = pi_2[state2idx[curr_state]]
+                            
+            if a == 0:
+                remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                if len(remaining_cards) == 0:
+                    break
+                card = remaining_cards[np.random.randint(0, len(remaining_cards))]
+                curr_state = (card, curr_state[1], K-curr_state[1], curr_state[3], get_subset_index(get_subset(curr_state[4],N)+[curr_state[0]],N))
+            else:
+                curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
+            
+            trajectory.append(curr_state)
+                    
+        if len(trajectory) % 3 == 1:
+            trajectory = trajectory[:-1]
+        trajs.append(trajectory)
+    return trajs # (s_0, a_0, r_0, s_1, a_1, r_1, ..., s_n, a_n, r_n)
         
 if __name__ == "__main__":
     N = 3

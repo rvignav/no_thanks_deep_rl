@@ -35,7 +35,7 @@ class FittedQVI:
         self.policy_history = []
 
     def init_start_policy(self):
-        num_states = mdp.calc_S(self.N, self.K)
+        num_states = mdp.num_states
         self.policy_history.append(np.random.choice([0, 1], size=num_states))
 
     def get_p2_policy(self):
@@ -49,7 +49,7 @@ class FittedQVI:
 
         prev_policy = self.get_p2_policy()
         for _ in range(num_trajectories):
-            trajectory = mdp.simulate(self.N, self.K, [1] * mdp.calc_S(self.N, self.K), prev_policy)
+            trajectory = mdp.simulate(self.N, self.K, [1] * mdp.num_states, prev_policy)
             states, actions, rewards, next_states = [], [], [], []
 
             for i in range(0, len(trajectory) - 2, 3):
@@ -102,8 +102,7 @@ class FittedQVI:
 
         # Train Q-network using FQI
 
-        # NEED TO FIX CALC_S (replace w getMappings)
-        q_network = QNetwork(state_dim=mdp.calc_S(self.N, self.K), action_dim=1)
+        q_network = QNetwork(state_dim=mdp.num_states, action_dim=1)
         q_targets = rewards_flat + np.amax(q_network(torch.FloatTensor(next_states_flat), torch.FloatTensor(actions_flat[:, None])).detach().numpy(), axis=1)
 
         self.train_q_network(states_flat, actions_flat, q_targets, q_network)
