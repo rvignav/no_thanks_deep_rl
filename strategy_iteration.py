@@ -4,13 +4,24 @@ import mdp
 class DP:
     def __init__(self, MDP):
         self.MDP = MDP
+        self.invalid_states = None
+
+    # Creates a vector of state indices where you must take and cannot pass
+    def init_action_mask():
+        num_states = mdp.calc_S(self.N, self.K)
+        temp = np.arange(num_states)
+    
+        def is_valid(index):
+            return self.idx2state[index] != 0
+
+        self.invalid_states = is_valid(temp).astype(int)
 
     def oneStep(prev_V):
         value = self.R + np.sum(self.P * prev_V.reshape(1, 1, -1), axis=2)
-        new_V = np.amax(value, axis = 0)
-        policy = np.argmax(value, axis = 0)
+        policy = np.argmax(value, axis = 0) * self.invalid_states
+        new_V = value[policy, np.arange(value.shape[1])]
 
-        return new_V, policy
+        return new_V, policy * self.invalid_states
 
     def fullDP(horizon):
         prev_V = np.zeros(mdp.calc_S(self.MDP.N, self.MDP.K))
