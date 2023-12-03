@@ -53,23 +53,7 @@ def get_subset_index(subset, N):
 for i in range(2**3):
     assert get_subset_index(get_subset(i, 3), 3) == i
 
-def calc_S(N, K):
-    state2idx = {}
-    i = 0
-
-    for c in range(N):
-        for k1 in range(K+1):
-            for k2 in range(K+1):
-                for s1 in range(2**N):
-                    for s2 in range(2**N):
-                        if c in get_subset(s1, N) or c in get_subset(s2, N):
-                            continue
-                        state2idx[(c, k1, k2, s1, s2)] = i
-                        i += 1
-                    
-    return len(state2idx)
-
-def build_nothanks_mdp(N, K, pi_2):
+def get_mappings(N, K):
     state2idx = {}
     idx2state = {}
     i = 0
@@ -79,11 +63,16 @@ def build_nothanks_mdp(N, K, pi_2):
             for k2 in range(K+1):
                 for s1 in range(2**N):
                     for s2 in range(2**N):
-                        if c in get_subset(s1, N) or c in get_subset(s2, N):
+                        if c in get_subset(s1, N) or c in get_subset(s2, N) or k1 + k2 > K:
                             continue
                         state2idx[(c, k1, k2, s1, s2)] = i
                         idx2state[i] = (c, k1, k2, s1, s2)
                         i += 1
+                    
+    return state2idx, idx2state
+
+def build_nothanks_mdp(N, K, pi_2):
+    state2idx, idx2state = get_mappings(N, K)
                     
     # Transition function: |A| x |S| x |S| array
     S = len(state2idx)
@@ -166,11 +155,14 @@ def simulate(N, K, pi_1, pi_2):
     c = np.random.randint(N)
     curr_state = (c, K/2, K/2, 0, 0)
     trajectory = [curr_state]
+    
+    state2idx, idx2state = get_mappings(N, K)
+    
     while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
         if curr_state[1] == 0:
             a = 0
         else:
-            a = pi_1[curr_state]
+            a = pi_1[state2idx[curr_state]]
                     
         trajectory.append(a)
         
@@ -188,7 +180,7 @@ def simulate(N, K, pi_1, pi_2):
         if curr_state[2] == 0:
             a = 0
         else:
-            a = pi_2[curr_state]
+            a = pi_2[state2idx[curr_state]]
                         
         if a == 0:
             remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
@@ -208,8 +200,9 @@ def simulate(N, K, pi_1, pi_2):
 if __name__ == "__main__":
     N = 3
     K = 2
-    pi_2 = [0]*calc_S(N, K)
+    state2idx, idx2state = get_mappings(N, K)
+    pi_2 = [0]*len(idx2state)
     print("Testing MDP gen with dummy player 2 policy")
     mdp = build_nothanks_mdp(N, K, pi_2)
     print("Succeeded")
-    print(simulate(N, K, [1]*calc_S(N, K), p_2))
+    print(simulate(N, K, [1]*len(idx2state), pi_2))
