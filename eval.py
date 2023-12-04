@@ -1,18 +1,20 @@
 import mdp
+import numpy as np
 
 def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100):
     num_games_won = 0
+    state2idx, idx2state = mdp.get_mappings(N, K)
     for i in range(num_games):
         p1_reward = 0
         p2_reward = 0
         c = np.random.randint(N)
         curr_state = (c, K/2, K/2, 0, 0)
         trajectory = [curr_state]
-        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
+        while mdp.get_subset(curr_state[3], N) + mdp.get_subset(curr_state[4], N) != [i for i in range(N)]:
             if curr_state[1] == 0:
                 a = 0
             else:
-                a = pi_1[curr_state]
+                a = pi_1[state2idx[curr_state]]
                                     
             if a == 0:
                 remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
@@ -48,23 +50,17 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100):
     return num_games_won / num_games
 
 def evaluate_policy(N: int, K: int, pi_1: list):
-    thresh = int(K/3)
+    thresh = int(K/2)
 
     pi_2 = []
     
-    state2idx = {}
-    idx2state = {}
-    i = 0
-
-    for c in range(N):
-        for k1 in range(K+1):
-            for k2 in range(K+1):
-                for s1 in range(2**N):
-                    for s2 in range(2**N):
-                        if c in mdp.get_subset(s1, N) or c in mdp.get_subset(s2, N):
-                            continue
-                        pi_2.append(1 if k2 >= thresh else 0)
-                        i += 1
+    state2idx, idx2state = mdp.get_mappings(N, K)
+    for s in range(len(idx2state)):
+        if idx2state[s][1] >= thresh:
+            pi_2.append(1)
+        else:
+            pi_2.append(0)
+    pi_2.append(0)
     
     print("Percentage of games won ", run_games(3, 2, pi_1, pi_2))
     
