@@ -10,6 +10,7 @@ class MDP:
         :param R: Reward function: |A| x |S| array
         :param H: time horizon: natural number
         """
+        assert K % 2 == 0
         self.idx2state = idx2state # maps number to tuple of form (c, k1, k2, s1, s2) where c is current face-up 
                                    # card, k1 is # tokens p1 has, k2 analogous, s1 is player 1's subset index, s2 analogous
         self.state2idx = state2idx
@@ -144,7 +145,7 @@ def build_nothanks_mdp(N, K, pi_2):
     R[1, S+1] = 0
 
     # Time horizon
-    H = N*(K/2+1)
+    H = int(N*(K/2+1))
 
     # MDP object
     mdp = MDP(idx2state, state2idx, N, K, P, R, H)

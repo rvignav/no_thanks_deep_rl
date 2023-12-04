@@ -1,3 +1,5 @@
+import mdp
+
 def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100):
     num_games_won = 0
     for i in range(num_games):
@@ -47,6 +49,8 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100):
 
 def evaluate_policy(N: int, K: int, pi_1: list):
     thresh = int(K/3)
+
+    pi_2 = []
     
     state2idx = {}
     idx2state = {}
@@ -57,9 +61,9 @@ def evaluate_policy(N: int, K: int, pi_1: list):
             for k2 in range(K+1):
                 for s1 in range(2**N):
                     for s2 in range(2**N):
-                        if c in get_subset(s1, N) or c in get_subset(s2, N):
+                        if c in mdp.get_subset(s1, N) or c in mdp.get_subset(s2, N):
                             continue
-                        pi_2[i] = 1 if k2 <= thresh else 0
+                        pi_2.append(1 if k2 >= thresh else 0)
                         i += 1
     
     print("Percentage of games won ", run_games(3, 2, pi_1, pi_2))

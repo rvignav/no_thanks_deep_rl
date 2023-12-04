@@ -1,6 +1,7 @@
 import numpy as np
 import mdp   
 import unittest
+import eval
 
 class DP:
     def __init__(self, MDP):
@@ -14,7 +15,7 @@ class DP:
         return new_V, policy
 
     def fullDP(self, horizon):
-        prev_V = np.zeros(self.MDP.num_states)
+        prev_V = np.zeros(self.MDP.nStates)
         policy_h = None
 
         for _ in range(horizon):
@@ -56,12 +57,12 @@ class TestStrategyIteration(unittest.TestCase):
         """
         Test that strategy iteration works.
         """
-        N = 5
+        N = 2
         K = 2
         num_iterations = 1
         si = StrategyIteration(N, K, 'DP', num_iterations)
         pi_1 = si.full_iteration()
-        evaluate_policy(N, K, pi_1)
+        eval.evaluate_policy(N, K, pi_1)
 
 if __name__ == '__main__':
     unittest.main()
