@@ -2,6 +2,7 @@ import numpy as np
 import mdp   
 import unittest
 import eval
+from mdp import get_mappings
 
 class DP:
     def __init__(self, MDP):
