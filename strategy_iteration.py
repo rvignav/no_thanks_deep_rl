@@ -7,7 +7,7 @@ from mdp import get_mappings
 class DP:
     def __init__(self, MDP):
         self.MDP = MDP
-
+        
     def oneStep(self, prev_V):
         value = self.MDP.R + np.sum(self.MDP.P * prev_V.reshape(1, 1, -1), axis=2)
         policy = np.argmax(value, axis = 0)
@@ -21,7 +21,9 @@ class DP:
 
         for _ in range(horizon):
             prev_V, policy_h = self.oneStep(prev_V)
-
+        
+        # ONLY RETURNING FIRST TIMESTEP ACTIONS. CHECKED, IT'S NOT STATIONARY
+        
         return policy_h
 
 class StrategyIteration:
@@ -33,14 +35,14 @@ class StrategyIteration:
         self.optimization_method = optimization_method
 
         state2idx, _ = mdp.get_mappings(self.N, self.K)
-        self.num_states = len(state2idx)
+        self.num_states = len(state2idx)+2
 
         self.prev_policy = np.random.choice([0, 1], size=self.num_states)
 
     def iteration_step(self):
         MDP = mdp.build_nothanks_mdp(self.N, self.K, self.prev_policy)
         new_policy = None
-
+        
         if self.optimization_method == 'DP':
             dp = DP(MDP)
             new_policy = dp.fullDP(MDP.H)
@@ -49,6 +51,7 @@ class StrategyIteration:
 
     def full_iteration(self):
         for _ in range(self.num_iterations):
+            print("Iteration ", _)
             self.iteration_step()
 
         return self.prev_policy
@@ -58,8 +61,9 @@ class TestStrategyIteration(unittest.TestCase):
         """
         Test that strategy iteration works.
         """
-        N = 2
+        N = 3
         K = 2
+        
         num_iterations = 1
         si = StrategyIteration(N, K, 'DP', num_iterations)
         pi_1 = si.full_iteration()

@@ -64,7 +64,7 @@ def get_mappings(N, K):
             for k2 in range(K+1):
                 for s1 in range(2**N):
                     for s2 in range(2**N):
-                        if c in get_subset(s1, N) or c in get_subset(s2, N) or k1 + k2 > K:
+                        if c in get_subset(s1, N) or c in get_subset(s2, N) or set(get_subset(s2, N)).intersection(set(get_subset(s1, N))) or k1 + k2 > K:
                             continue
                         state2idx[(c, k1, k2, s1, s2)] = i
                         idx2state[i] = (c, k1, k2, s1, s2)
@@ -138,12 +138,15 @@ def build_nothanks_mdp(N, K, pi_2):
         c, k1, k2, s1, s2 = idx2state[s]
         R[0, s] = K - k1 - k2 - c
     
-    R[0, S] = -np.inf
-    R[1, S] = -np.inf
+    for s in range(len(idx2state)):
+        R[1, s] = -1
+    
+    R[0, S] = -1e8
+    R[1, S] = -1e8
     
     R[0, S+1] = 0
     R[1, S+1] = 0
-
+    
     # Time horizon
     H = int(N*(K/2+1))
 
@@ -171,12 +174,17 @@ def simulate(N, K, pi_1, pi_2, num_trajectories):
             
             if a == 0:
                 remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                
+                if len(remaining_cards) == 0:
+                    trajectory.append(K - curr_state[1] - curr_state[2] - curr_state[0])
+                    break
+                
                 card = remaining_cards[np.random.randint(0, len(remaining_cards))]
                 reward = K - curr_state[1] - curr_state[2] - curr_state[0]
                 curr_state = (card, K-curr_state[2], curr_state[2], get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N), curr_state[4])
             else:
                 curr_state = (curr_state[0], curr_state[1]-1, curr_state[2], curr_state[3], curr_state[4])
-                reward = 0
+                reward = -1
             
             trajectory.append(reward)
             
