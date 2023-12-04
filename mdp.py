@@ -15,7 +15,7 @@ class MDP:
         self.state2idx = state2idx
         self.N = N
         self.K = K
-        self.num_states = len(idx2state)
+        self.num_states = len(idx2state)+1
         
         assert P.ndim == 3, "Invalid transition function: it should have 3 dimensions"
         self.nActions = P.shape[0]
@@ -79,7 +79,7 @@ def build_nothanks_mdp(N, K, pi_2):
     S = len(state2idx)
     A = 2 # 0 = take card, 1 = pass
     
-    P = np.zeros([A, S+2, S+2])
+    P = np.zeros([A, S+1, S+1])
     
     for s in range(len(idx2state)):
         c, k1, k2, s1, s2 = idx2state[s]
@@ -87,7 +87,7 @@ def build_nothanks_mdp(N, K, pi_2):
         # take card
         remaining_cards = list(set([i for i in range(N)]) - set(get_subset(s1, N)) - set(get_subset(s2, N)) - set([c]))
         if len(remaining_cards) == 0:
-            P[0, s, S+1] = 1
+            P[0, s, S] = 1
         else:
             for card in remaining_cards:
                 new_s1 = get_subset_index(get_subset(s1, N) + [c], N)
@@ -96,7 +96,7 @@ def build_nothanks_mdp(N, K, pi_2):
                 if a == 0 or k2 == 0:
                     new_remaining_cards = list(set([i for i in range(N)]) - set(get_subset(new_s1, N)) - set(get_subset(s2, N)) - set([card]))
                     if len(new_remaining_cards) == 0:
-                        P[0, s, S+1] = 1
+                        P[0, s, S] = 1
                     else:
                         for card2 in new_remaining_cards:
                             new_s2 = get_subset_index(get_subset(s2, N) + [card], N)
@@ -106,26 +106,20 @@ def build_nothanks_mdp(N, K, pi_2):
                     P[0, s, state2idx[(card, K-k2, k2-1, new_s1, s2)]] = 1 / len(remaining_cards)
         
         # pass
-        if k1 == 0:
-            P[1, s, S] = 1
+        sprime = state2idx[(c, k1-1, k2, s1, s2)]
+        a = pi_2[sprime]
+        if a == 0 or k2 == 0:
+            remaining_cards = list(set([i for i in range(N)]) - set(get_subset(s1, N)) - set(get_subset(s2, N)) - set([c]))
+            if len(remaining_cards) == 0:
+                P[1, s, S] = 1
+            else:
+                for card in remaining_cards:
+                    new_s2 = get_subset_index(get_subset(s2, N) + [c], N)
+                    sdprime = state2idx[(card, k1-1, K-(k1-1), s1, new_s2)]
+                    P[1, s, sdprime] = 1 / len(remaining_cards)
         else:
             sprime = state2idx[(c, k1-1, k2, s1, s2)]
-            a = pi_2[sprime]
-            if a == 0 or k2 == 0:
-                remaining_cards = list(set([i for i in range(N)]) - set(get_subset(s1, N)) - set(get_subset(s2, N)) - set([c]))
-                if len(remaining_cards) == 0:
-                    P[1, s, S+1] = 1
-                else:
-                    for card in remaining_cards:
-                        new_s2 = get_subset_index(get_subset(s2, N) + [c], N)
-                        sdprime = state2idx[(card, k1-1, K-(k1-1), s1, new_s2)]
-                        P[1, s, sdprime] = 1 / len(remaining_cards)
-            else:
-                sprime = state2idx[(c, k1-1, k2, s1, s2)]
-                P[1, s, sprime] = 1
-
-    P[0, S+1, S+1] = 1
-    P[1, S+1, S+1] = 1
+            P[1, s, sprime] = 1
     
     P[0, S, S] = 1
     P[1, S, S] = 1
@@ -138,11 +132,8 @@ def build_nothanks_mdp(N, K, pi_2):
         c, k1, k2, s1, s2 = idx2state[s]
         R[0, s] = K - k1 - k2 - c
     
-    R[0, S] = -np.inf
-    R[1, S] = -np.inf
-    
-    R[0, S+1] = 0
-    R[1, S+1] = 0
+    R[0, S] = 0
+    R[1, S] = 0
 
     # Time horizon
     H = N*(K/2+1)
