@@ -46,11 +46,14 @@ class QNetwork(nn.Module):
 
 
 class FittedQVI:
-    def __init__(self, MDP, num_iterations, lr=0.001, batch_size=32):
-        self.MDP = MDP
+    def __init__(self, N, K, num_iterations, pi_data, lr=0.001, batch_size=32):
+        self.N = N
+        self.K = K
         self.num_iterations = num_iterations
         self.lr = lr
         self.batch_size = batch_size
+        self.num_states = len(pi_data)
+        self.pi_data = pi_data
 
     def rollout(self, num_trajectories, prev_policy):
         all_states = []
@@ -61,10 +64,10 @@ class FittedQVI:
 
         for _ in range(num_trajectories):
             # NEED TO CHECK IF THIS TRAJECTORY IS RIGHT
-            trajectory = mdp.simulate(N, K, [1] * self.MDP.nStates, prev_policy)
+            trajectory = mdp.simulate(self.N, self.K, self.pi_data, prev_policy)
             states, actions, rewards, next_states, horizons = [], [], [], [], []
 
-            for i in range(0, len(trajectory), 3):
+            for i in range(0, len(trajectory)-1, 3):
                 states.append(trajectory[i])
                 actions.append(trajectory[i + 1])
                 rewards.append(trajectory[i + 2])
@@ -130,7 +133,7 @@ class FittedQVI:
 
     def fullQVI(self, horizon):
         #THIS NEEDS TO BE CHANGED
-        prev_V = np.zeros(self.MDP.nStates)
+        prev_V = np.zeros(self.num_states)
         policy_h = None
 
         for _ in range(horizon):
