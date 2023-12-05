@@ -156,14 +156,15 @@ def build_nothanks_mdp(N, K, pi_2):
 
 def simulate(N, K, pi_1, pi_2, num_trajectories):
     trajs = []
+
+    state2idx, idx2state = get_mappings(N, K)
+
     for _ in range(num_trajectories):
         trajectory = []
         c = np.random.randint(N)
         curr_state = (c, K/2, K/2, 0, 0)
-        trajectory = [curr_state]
-        
-        state2idx, idx2state = get_mappings(N, K)
-        
+        trajectory = [state2idx[curr_state]]
+                
         while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
             if curr_state[1] == 0:
                 a = 0
@@ -202,7 +203,7 @@ def simulate(N, K, pi_1, pi_2, num_trajectories):
             else:
                 curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
             
-            trajectory.append(curr_state)
+            trajectory.append(state2idx[curr_state])
                     
         if len(trajectory) % 3 == 1:
             trajectory = trajectory[:-1]

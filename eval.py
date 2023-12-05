@@ -120,7 +120,7 @@ def evaluate_policy(N: int, K: int, pi_1: list):
     
     state2idx, idx2state = get_mappings(N, K)
     
-    print("Percentage of games won ", run_games(N, K, pi_1, pi_2, 5))
+    print("Percentage of games won ", run_games(N, K, pi_1, pi_2))
     
     # Check if pi_1 does milking + setting a threshold for NoThanks variant
     # for i in range(len(pi_1)-2):
