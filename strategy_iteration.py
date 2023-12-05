@@ -5,21 +5,28 @@ import eval
 from mdp import get_mappings
 
 class DP:
-    def __init__(self, MDP):
+    def __init__(self, MDP, horizon):
         self.MDP = MDP
+        self.track = self.MDP.state2idx[(2,1,1,0,0)]
+        self.horizon = horizon
+        self.step = 0
 
     def oneStep(self, prev_V):
         value = self.MDP.R + np.sum(self.MDP.P * prev_V.reshape(1, 1, -1), axis=2)
         policy = np.argmax(value, axis = 0)
         new_V = np.amax(value, axis = 0)
 
+        self.step += 1
+        print(self.horizon - self.step)
+        print(new_V[self.track])
+
         return new_V, policy
 
-    def fullDP(self, horizon):
+    def fullDP(self):
         prev_V = np.zeros(self.MDP.nStates)
         policy_h = None
 
-        for _ in range(horizon):
+        for _ in range(self.horizon):
             prev_V, policy_h = self.oneStep(prev_V)
 
         return policy_h
@@ -42,8 +49,8 @@ class StrategyIteration:
         new_policy = None
 
         if self.optimization_method == 'DP':
-            dp = DP(MDP)
-            new_policy = dp.fullDP(MDP.H)
+            dp = DP(MDP, MDP.H)
+            new_policy = dp.fullDP()
         
         self.prev_policy = new_policy
 
@@ -58,7 +65,7 @@ class TestStrategyIteration(unittest.TestCase):
         """
         Test that strategy iteration works.
         """
-        N = 2
+        N = 3
         K = 2
         num_iterations = 1
         si = StrategyIteration(N, K, 'DP', num_iterations)
