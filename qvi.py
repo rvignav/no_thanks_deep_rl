@@ -10,7 +10,7 @@ class QNetwork(nn.Module):
     """
     def __init__(self, state_dim, action_dim):
         super(QNetwork, self).__init__()
-        self.fc1 = nn.Linear(state_dim + action_dim, 64)
+        self.fc1 = nn.Linear(state_dim + action_dim + 1, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 1)
 
@@ -104,7 +104,7 @@ class FittedQVI:
 
         # Train Q-network using FQI
 
-        q_network = QNetwork(state_dim=mdp.num_states, action_dim=1)
+        q_network = QNetwork(state_dim=1, action_dim=1)
         q_targets = rewards_flat + np.amax(q_network(torch.FloatTensor(next_states_flat), torch.FloatTensor(actions_flat[:, None])).detach().numpy(), axis=1)
 
         self.train_q_network(states_flat, actions_flat, q_targets, q_network)

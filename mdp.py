@@ -121,7 +121,7 @@ def build_nothanks_mdp(N, K, pi_2):
                         sdprime = state2idx[(card, k1-1, K-(k1-1), s1, new_s2)]
                         P[1, s, sdprime] = 1 / len(remaining_cards)
             else:
-                sprime = state2idx[(c, k1-1, k2, s1, s2)]
+                sprime = state2idx[(c, k1-1, k2-1, s1, s2)]
                 P[1, s, sprime] = 1
 
     P[0, S+1, S+1] = 1

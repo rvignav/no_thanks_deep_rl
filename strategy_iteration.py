@@ -61,10 +61,10 @@ class TestStrategyIteration(unittest.TestCase):
         """
         Test that strategy iteration works.
         """
-        N = 3
+        N = 2
         K = 2
         
-        num_iterations = 1
+        num_iterations = 20
         si = StrategyIteration(N, K, 'DP', num_iterations)
         pi_1 = si.full_iteration()
         eval.evaluate_policy(N, K, pi_1)
