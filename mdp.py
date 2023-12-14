@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import utils
 
 class MDP:
     def __init__(self, idx2state, state2idx, N, K, P, R, H):
@@ -154,17 +155,23 @@ def build_nothanks_mdp(N, K, pi_2):
     mdp = MDP(idx2state, state2idx, N, K, P, R, H)
     return mdp
 
-def simulate(N, K, pi_1, pi_2, num_trajectories):
+def simulate(N, K, pi_1, pi_2, num_trajectories, variant=False):
     trajs = []
+
+    state2idx, idx2state = get_mappings(N, K)
+
     for _ in range(num_trajectories):
+        cards = [i for i in range(N)]
+        if variant:
+            num_to_remove = min(N-2, 5)
+            cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
+        
         trajectory = []
-        c = np.random.randint(N)
+        c = cards[np.random.randint(len(cards))]
         curr_state = (c, K/2, K/2, 0, 0)
-        trajectory = [curr_state]
-        
-        state2idx, idx2state = get_mappings(N, K)
-        
-        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
+        trajectory = [state2idx[curr_state]]
+                
+        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != cards:
             if curr_state[1] == 0:
                 a = 0
             else:
@@ -173,7 +180,7 @@ def simulate(N, K, pi_1, pi_2, num_trajectories):
             trajectory.append(a)
             
             if a == 0:
-                remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
                 
                 if len(remaining_cards) == 0:
                     trajectory.append(K - curr_state[1] - curr_state[2] - curr_state[0])
@@ -181,7 +188,21 @@ def simulate(N, K, pi_1, pi_2, num_trajectories):
                 
                 card = remaining_cards[np.random.randint(0, len(remaining_cards))]
                 reward = K - curr_state[1] - curr_state[2] - curr_state[0]
-                curr_state = (card, K-curr_state[2], curr_state[2], get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N), curr_state[4])
+                if not variant:
+                    next_subset_index = get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N)
+                
+                # Take sequences into account
+                if variant:
+                    subset = get_subset(curr_state[3],N)
+                    if curr_state[0]-1 in subset and curr_state[0]+1 in subset:
+                        reward = K - curr_state[1] - curr_state[2] +(curr_state[0]+1)
+                    elif curr_state[0]-1 in subset:
+                        reward = K - curr_state[1] - curr_state[2]
+                    elif curr_state[0]+1 in subset:
+                        reward = K - curr_state[1] - curr_state[2]+1
+                    next_subset_index = get_subset_index(subset+[curr_state[0]],N)
+                
+                curr_state = (card, K-curr_state[2], curr_state[2], next_subset_index, curr_state[4])
             else:
                 curr_state = (curr_state[0], curr_state[1]-1, curr_state[2], curr_state[3], curr_state[4])
                 reward = -1
@@ -194,7 +215,7 @@ def simulate(N, K, pi_1, pi_2, num_trajectories):
                 a = pi_2[state2idx[curr_state]]
                             
             if a == 0:
-                remaining_cards = list(set([i for i in range(N)]) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
                 if len(remaining_cards) == 0:
                     break
                 card = remaining_cards[np.random.randint(0, len(remaining_cards))]
@@ -202,7 +223,89 @@ def simulate(N, K, pi_1, pi_2, num_trajectories):
             else:
                 curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
             
-            trajectory.append(curr_state)
+            trajectory.append(state2idx[curr_state])
+                    
+        if len(trajectory) % 3 == 1:
+            trajectory = trajectory[:-1]
+        trajs.append(trajectory)
+    return trajs # (s_0, a_0, r_0, s_1, a_1, r_1, ..., s_n, a_n, r_n)
+
+def simulate_softmax(N, K, theta_1, theta_2, num_trajectories, variant=False):
+    trajs = []
+
+    state2idx, idx2state = get_mappings(N, K)
+
+    for _ in range(num_trajectories):
+        cards = [i for i in range(N)]
+        if variant:
+            num_to_remove = min(N-2, 5)
+            cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
+        
+        trajectory = []
+        c = cards[np.random.randint(len(cards))]
+        curr_state = (c, K/2, K/2, 0, 0)
+        trajectory = [state2idx[curr_state]]
+        
+        h = -1
+                
+        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != cards:
+            h += 1
+            if curr_state[1] == 0:
+                a = 0
+            else:
+                phis = utils.extract_features(curr_state, h)
+                action_dist = utils.compute_action_distribution(theta_1, phis)
+                a = np.random.choice(2, p=action_dist[0])
+                        
+            trajectory.append(a)
+            
+            if a == 0:
+                remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                
+                if len(remaining_cards) == 0:
+                    trajectory.append(K - curr_state[1] - curr_state[2] - curr_state[0])
+                    break
+                
+                card = remaining_cards[np.random.randint(0, len(remaining_cards))]
+                reward = K - curr_state[1] - curr_state[2] - curr_state[0]
+                if not variant:
+                    next_subset_index = get_subset_index(get_subset(curr_state[3],N)+[curr_state[0]],N)
+                
+                # Take sequences into account
+                if variant:
+                    subset = get_subset(curr_state[3],N)
+                    if curr_state[0]-1 in subset and curr_state[0]+1 in subset:
+                        reward = K - curr_state[1] - curr_state[2] +(curr_state[0]+1)
+                    elif curr_state[0]-1 in subset:
+                        reward = K - curr_state[1] - curr_state[2]
+                    elif curr_state[0]+1 in subset:
+                        reward = K - curr_state[1] - curr_state[2]+1
+                    next_subset_index = get_subset_index(subset+[curr_state[0]],N)
+                
+                curr_state = (card, K-curr_state[2], curr_state[2], next_subset_index, curr_state[4])
+            else:
+                curr_state = (curr_state[0], curr_state[1]-1, curr_state[2], curr_state[3], curr_state[4])
+                reward = -1
+            
+            trajectory.append(reward)
+            
+            if curr_state[2] == 0:
+                a = 0
+            else:
+                phis = utils.extract_features(curr_state, h)
+                action_dist = utils.compute_action_distribution(theta_2, phis)
+                a = np.random.choice(2, p=action_dist[0])
+                            
+            if a == 0:
+                remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
+                if len(remaining_cards) == 0:
+                    break
+                card = remaining_cards[np.random.randint(0, len(remaining_cards))]
+                curr_state = (card, curr_state[1], K-curr_state[1], curr_state[3], get_subset_index(get_subset(curr_state[4],N)+[curr_state[0]],N))
+            else:
+                curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
+            
+            trajectory.append(state2idx[curr_state])
                     
         if len(trajectory) % 3 == 1:
             trajectory = trajectory[:-1]
