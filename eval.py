@@ -1,6 +1,8 @@
 from mdp import get_subset, get_subset_index, get_mappings
 import numpy as np
 
+# TODO make run_games_softmax
+
 def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, variant=False):
     num_games_won = 0
     state2idx, idx2state = get_mappings(N, K)
@@ -13,7 +15,7 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
             num_to_remove = min(N-2, 5)
             cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
         
-        c = np.random.randint(cards)
+        c = cards[np.random.randint(len(cards))]
         print(c)
         curr_state = (c, K/2, K/2, 0, 0)
         
