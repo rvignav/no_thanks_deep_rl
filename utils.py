@@ -4,7 +4,7 @@ def extract_features(s, h):
     feats = []
     for a in [0, 1]:
         # copy s
-        sc = s.copy()
+        sc = list(s)
         sc.append(a)
         sc.append(h)
         feats.append(sc)

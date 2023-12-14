@@ -21,7 +21,8 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
         
         traj = []
         
-        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != [i for i in range(N)]:
+        while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != cards:
+            traj.append(curr_state)
             if curr_state[1] == 0:
                 a = 0
             else:
@@ -31,7 +32,26 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
                 remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
                 
                 if len(remaining_cards) == 0:
-                    p1_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
+                    traj.append(a)
+                    
+                    if variant:
+                        subset = get_subset(curr_state[3],N)
+                        if curr_state[0]-1 in subset and curr_state[0]+1 in subset:
+                            r = K - curr_state[1] - curr_state[2] +(curr_state[0]+1)
+                        elif curr_state[0]-1 in subset:
+                            r = K - curr_state[1] - curr_state[2]
+                        elif curr_state[0]+1 in subset:
+                            r = K - curr_state[1] - curr_state[2]+1
+                        else:
+                            r = K - curr_state[1] - curr_state[2] - curr_state[0]
+                        
+                        traj.append(r)
+                        p1_reward += r
+                        
+                    else:
+                        traj.append(K - curr_state[1] - curr_state[2] - curr_state[0])
+                        p1_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
+                    
                     break
                 
                 card = remaining_cards[np.random.randint(0, len(remaining_cards))]
@@ -71,7 +91,26 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
                 remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
                 
                 if len(remaining_cards) == 0:
-                    p2_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
+                    traj.append(a)
+                    
+                    if variant:
+                        subset = get_subset(curr_state[4],N)
+                        if curr_state[0]-1 in subset and curr_state[0]+1 in subset:
+                            r = K - curr_state[1] - curr_state[2] +(curr_state[0]+1)
+                        elif curr_state[0]-1 in subset:
+                            r = K - curr_state[1] - curr_state[2]
+                        elif curr_state[0]+1 in subset:
+                            r = K - curr_state[1] - curr_state[2]+1
+                        else:
+                            r = K - curr_state[1] - curr_state[2] - curr_state[0]
+                        
+                        traj.append(r)
+                        p1_reward += r
+                        
+                    else:
+                        traj.append(K - curr_state[1] - curr_state[2] - curr_state[0])
+                        p1_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
+                    
                     break
                 
                 card = remaining_cards[np.random.randint(0, len(remaining_cards))]
@@ -104,6 +143,7 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
         print("Game ", i, " p1_reward ", p1_reward, " p2_reward ", p2_reward)
                                 
         num_games_won += (p1_reward > p2_reward)
+        print(traj)
     
     return num_games_won / num_games
 
@@ -150,7 +190,7 @@ def evaluate_policy(N: int, K: int, pi_1: list):
     
     state2idx, idx2state = get_mappings(N, K)
     
-    print("Percentage of games won ", run_games(N, K, pi_1, pi_2, 5))
+    print("Percentage of games won ", run_games(N, K, pi_1, pi_2))
     
     # Check if pi_1 does milking + setting a threshold for NoThanks variant
     # for i in range(len(pi_1)-2):
