@@ -123,16 +123,16 @@ class FittedQVI:
         return policy_h
 
 class FittedPI:
-    def __init__(self, N, K, num_iterations, pi_data, lr=0.001, batch_size=32):
+    def __init__(self, N, K, num_iterations, num_pi, num_states, lr=0.001, batch_size=32):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
+        self.num_pi = num_pi
         self.lr = lr
         self.batch_size = batch_size
-        self.num_states = len(pi_data)
-        self.pi_data = pi_data
+        self.num_states = num_states
 
-    def rollout(self, num_trajectories, prev_policy):
+    def rollout(self, num_trajectories, prev_policy, curr_policy):
         all_states = []
         all_actions = []
         all_rewards = []
@@ -140,7 +140,7 @@ class FittedPI:
         all_horizons = []
 
         #print(self.N, self.K, self.pi_data, prev_policy, num_trajectories)
-        trajectories = mdp.simulate(self.N, self.K, self.pi_data, prev_policy, num_trajectories)
+        trajectories = mdp.simulate(self.N, self.K, curr_policy, prev_policy, num_trajectories)
         for i in range(num_trajectories):
 
             trajectory = trajectories[i]
@@ -171,23 +171,26 @@ class FittedPI:
                 optimizer.step()
 
     def policy_iteration_step(self, prev_policy):
-        states, actions, rewards, next_states, horizons = self.rollout(50, prev_policy)
+        new_policy = np.random.choice([0, 1], size=self.num_states)
 
-        q_network = QNetwork()
-        outputs = []
-        for a, act, c, r in zip(states, actions, horizons, rewards):
-            nn_output = np.max([q_network(torch.tensor([a, b, c], dtype=torch.float32)).detach().numpy() for b in [0, 1]])
-            outputs.append(r + nn_output)
-        q_targets = outputs
-        self.train_q_network(states, actions, horizons, q_targets, q_network)
+        for k in range(self.num_pi):
+            states, actions, rewards, next_states, horizons = self.rollout(50, new_policy, prev_policy)
 
-        # Use the trained Q-network to derive a new policy            
-        new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
+            q_network = QNetwork()
+            outputs = []
+            for a, act, c, r in zip(states, actions, horizons, rewards):
+                nn_output = np.max([q_network(torch.tensor([a, b, c], dtype=torch.float32)).detach().numpy() for b in [0, 1]])
+                outputs.append(r + nn_output)
+            q_targets = outputs
+            self.train_q_network(states, actions, horizons, q_targets, q_network)
+
+            # Use the trained Q-network to derive a new policy            
+            new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
 
         return new_policy
 
     def fullPI(self):
-        policy_h = self.pi_data
+        policy_h = np.random.choice([0, 1], size=self.num_states)
         for _ in range(self.num_iterations):
             policy_h = self.policy_iteration_step(policy_h)
 
@@ -219,7 +222,7 @@ class StrategyIteration:
             new_policy = qvi.fullQVI(MDP.H)
 
         elif self.optimization_method == "PI":
-            fittedpi = FittedPI(self.N, self.K, num_iterations = 10, pi_data = self.prev_policy)
+            fittedpi = FittedPI(self.N, self.K, num_iterations = 10, num_pi = 10, num_states = len(self.prev_policy))
             new_policy = fittedpi.fullPI()
 
         self.prev_policy = new_policy
