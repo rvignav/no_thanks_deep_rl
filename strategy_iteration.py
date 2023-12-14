@@ -181,7 +181,7 @@ class FittedPI:
         q_targets = outputs
         self.train_q_network(states, actions, horizons, q_targets, q_network)
 
-        # Use the trained Q-network to derive a new policy
+        # Use the trained Q-network to derive a new policy            
         new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
 
         return new_policy
