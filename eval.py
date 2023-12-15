@@ -12,7 +12,7 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
         cards = [i for i in range(N)]
         if variant:
             num_to_remove = min(N-2, 5)
-            cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
+            cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         c = cards[np.random.randint(len(cards))]
         print(c)
@@ -156,7 +156,7 @@ def run_games_softmax(N: int, K: int, theta_1: list, pi_2: list, num_games: int 
         cards = [i for i in range(N)]
         if variant:
             num_to_remove = min(N-2, 5)
-            cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
+            cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         c = cards[np.random.randint(len(cards))]
         print(c)
@@ -311,7 +311,7 @@ def get_thresh_policy(N, K):
     pi_2.append(0)
     return pi_2
 
-def evaluate_policy_softmax(N: int, K: int, theta_1: list):
+def evaluate_policy_softmax(N: int, K: int, theta_1: list, variant: bool = False):
     if N >= 3:
         pi_2 = get_thresh_policy(N, K)
     else:
@@ -338,9 +338,9 @@ def evaluate_policy_softmax(N: int, K: int, theta_1: list):
     
     state2idx, idx2state = get_mappings(N, K)
     
-    print("Percentage of games won ", run_games_softmax(N, K, theta_1, pi_2))
+    print("Percentage of games won ", run_games_softmax(N, K, theta_1, pi_2, variant=variant))
 
-def evaluate_policy(N: int, K: int, pi_1: list):
+def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False):
     if N >= 3:
         pi_2 = get_thresh_policy(N, K)
     else:
@@ -367,7 +367,7 @@ def evaluate_policy(N: int, K: int, pi_1: list):
     
     state2idx, idx2state = get_mappings(N, K)
     
-    print("Percentage of games won ", run_games(N, K, pi_1, pi_2))
+    print("Percentage of games won ", run_games(N, K, pi_1, pi_2, variant=variant))
     
     # Check if pi_1 does milking + setting a threshold for NoThanks variant
     # for i in range(len(pi_1)-2):
@@ -376,3 +376,6 @@ def evaluate_policy(N: int, K: int, pi_1: list):
     # check if actions are only dependent on c, k1, k2
     
     # MAKE SOME PLOTS
+    
+    # Win rate against dummy (randomly initialized) policy, against setting a threshold, 
+    # against hard-coded thresh+milk, and against optimal when we know it

@@ -49,7 +49,7 @@ class QNetwork(nn.Module):
 
 
 class FittedQVI:
-    def __init__(self, N, K, num_iterations, pi_data, lr=0.001, batch_size=32):
+    def __init__(self, N, K, num_iterations, pi_data, variant, lr=0.001, batch_size=32):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
@@ -57,6 +57,7 @@ class FittedQVI:
         self.batch_size = batch_size
         self.num_states = len(pi_data)
         self.pi_data = pi_data
+        self.variant = variant
 
     def rollout(self, num_trajectories, prev_policy):
         all_states = []
@@ -65,7 +66,7 @@ class FittedQVI:
         all_next_states = []
         all_horizons = []
 
-        trajectories = mdp.simulate(self.N, self.K, self.pi_data, prev_policy, num_trajectories)
+        trajectories = mdp.simulate(self.N, self.K, self.pi_data, prev_policy, num_trajectories, self.variant)
         for i in range(num_trajectories):
 
             trajectory = trajectories[i]
@@ -124,7 +125,7 @@ class FittedQVI:
         return policy_h
 
 class FittedPI:
-    def __init__(self, N, K, num_iterations, num_eval_iterations, num_q_iterations, num_states, lr=0.001, batch_size=32):
+    def __init__(self, N, K, num_iterations, num_eval_iterations, num_q_iterations, num_states, variant, lr=0.001, batch_size=32):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
@@ -133,6 +134,7 @@ class FittedPI:
         self.lr = lr
         self.batch_size = batch_size
         self.num_states = num_states
+        self.variant = variant
 
     def rollout(self, num_trajectories, prev_policy, curr_policy):
         all_states = []
@@ -142,7 +144,7 @@ class FittedPI:
         all_horizons = []
 
         #print(self.N, self.K, self.pi_data, prev_policy, num_trajectories)
-        trajectories = mdp.simulate(self.N, self.K, curr_policy, prev_policy, num_trajectories)
+        trajectories = mdp.simulate(self.N, self.K, curr_policy, prev_policy, num_trajectories, self.variant)
         for i in range(num_trajectories):
 
             trajectory = trajectories[i]
@@ -200,12 +202,13 @@ class FittedPI:
         return policy_h
 
 class StrategyIteration:
-    def __init__(self, N, K, optimization_method, num_iterations):
+    def __init__(self, N, K, optimization_method, num_iterations, variant):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
         self.prev_policy = None
         self.optimization_method = optimization_method
+        self.variant = variant
 
         state2idx, _ = mdp.get_mappings(self.N, self.K)
         self.num_states = len(state2idx)+2
@@ -221,11 +224,11 @@ class StrategyIteration:
             new_policy = dp.fullDP(MDP.H)
         
         elif self.optimization_method == "QVI":
-            qvi = FittedQVI(self.N, self.K, num_iterations = 10, pi_data = self.prev_policy)
+            qvi = FittedQVI(self.N, self.K, num_iterations = 10, pi_data = self.prev_policy, variant = self.variant)
             new_policy = qvi.fullQVI(MDP.H)
 
         elif self.optimization_method == "PI":
-            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 50, num_q_iterations = 30, num_states = len(self.prev_policy))
+            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 50, num_q_iterations = 30, num_states = len(self.prev_policy), variant = self.variant)
             new_policy = fittedpi.fullPI()
 
         self.prev_policy = new_policy
@@ -245,10 +248,12 @@ class TestStrategyIteration(unittest.TestCase):
         N = 3
         K = 2
         
+        variant = True
+        
         num_iterations = 2
-        si = StrategyIteration(N, K, 'PI', num_iterations)
+        si = StrategyIteration(N, K, 'QVI', num_iterations, variant)
         pi_1 = si.full_iteration()
-        eval.evaluate_policy(N, K, pi_1)
+        eval.evaluate_policy(N, K, pi_1, variant)
 
 if __name__ == '__main__':
     unittest.main()

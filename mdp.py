@@ -164,13 +164,13 @@ def simulate(N, K, pi_1, pi_2, num_trajectories, variant=False):
         cards = [i for i in range(N)]
         if variant:
             num_to_remove = min(N-2, 5)
-            cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
+            cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         trajectory = []
         c = cards[np.random.randint(len(cards))]
         curr_state = (c, K/2, K/2, 0, 0)
         trajectory = [state2idx[curr_state]]
-                
+                        
         while get_subset(curr_state[3], N) + get_subset(curr_state[4], N) != cards:
             if curr_state[1] == 0:
                 a = 0
@@ -224,10 +224,11 @@ def simulate(N, K, pi_1, pi_2, num_trajectories, variant=False):
                 curr_state = (curr_state[0], curr_state[1], curr_state[2]-1, curr_state[3], curr_state[4])
             
             trajectory.append(state2idx[curr_state])
-                    
+                                
         if len(trajectory) % 3 == 1:
             trajectory = trajectory[:-1]
         trajs.append(trajectory)
+        
     return trajs # (s_0, a_0, r_0, s_1, a_1, r_1, ..., s_n, a_n, r_n)
 
 def simulate_softmax(N, K, theta_1, theta_2, num_trajectories, variant=False):
@@ -239,7 +240,7 @@ def simulate_softmax(N, K, theta_1, theta_2, num_trajectories, variant=False):
         cards = [i for i in range(N)]
         if variant:
             num_to_remove = min(N-2, 5)
-            cards = np.random.choice(cards, len(cards)-num_to_remove, replace=False)
+            cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         trajectory = []
         c = cards[np.random.randint(len(cards))]
