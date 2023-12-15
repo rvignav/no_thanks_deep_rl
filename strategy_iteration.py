@@ -222,7 +222,7 @@ class StrategyIteration:
             new_policy = qvi.fullQVI(MDP.H)
 
         elif self.optimization_method == "PI":
-            fittedpi = FittedPI(self.N, self.K, num_iterations = 10, num_pi = 10, num_states = len(self.prev_policy))
+            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_pi = 20, num_states = len(self.prev_policy))
             new_policy = fittedpi.fullPI()
 
         self.prev_policy = new_policy
@@ -239,7 +239,7 @@ class TestStrategyIteration(unittest.TestCase):
         """
         Test that strategy iteration works.
         """
-        N = 2
+        N = 3
         K = 2
         
         num_iterations = 2

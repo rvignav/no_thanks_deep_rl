@@ -145,6 +145,7 @@ class NPG:
         self.total_rewards = []
 
         for iter in range(self.T):
+            print("Iteration: ", iter)
             self.theta_2, episode_rewards = self.train(self.I, self.J, self.delta, self.lamb)
             self.total_rewards.extend(episode_rewards)
 
@@ -152,9 +153,9 @@ class NPG:
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    N = 4
-    K = 2
-    npg = NPG(N, K, 5, 100, 200, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
+    N = 10
+    K = 3
+    npg = NPG(N, K, 2, 100, 200, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
     theta, total_rewards = npg.strategy_iteration()
     
     eval.evaluate_policy_softmax(N, K, theta)

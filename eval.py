@@ -104,11 +104,11 @@ def run_games(N: int, K: int, pi_1: list, pi_2: list, num_games: int = 100, vari
                             r = K - curr_state[1] - curr_state[2] - curr_state[0]
                         
                         traj.append(r)
-                        p1_reward += r
+                        p2_reward += r
                         
                     else:
                         traj.append(K - curr_state[1] - curr_state[2] - curr_state[0])
-                        p1_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
+                        p2_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
                     
                     break
                 
@@ -253,11 +253,11 @@ def run_games_softmax(N: int, K: int, theta_1: list, pi_2: list, num_games: int 
                             r = K - curr_state[1] - curr_state[2] - curr_state[0]
                         
                         traj.append(r)
-                        p1_reward += r
+                        p2_reward += r
                         
                     else:
                         traj.append(K - curr_state[1] - curr_state[2] - curr_state[0])
-                        p1_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
+                        p2_reward += K - curr_state[1] - curr_state[2] - curr_state[0]
                     
                     break
                 
