@@ -374,3 +374,5 @@ def evaluate_policy(N: int, K: int, pi_1: list):
     #     print("State ", idx2state[i], " pi_1 ", pi_1[i])
     
     # check if actions are only dependent on c, k1, k2
+    
+    # MAKE SOME PLOTS
