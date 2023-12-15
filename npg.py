@@ -1,6 +1,7 @@
 import numpy as np
 import utils
 import mdp
+import eval
 
 import matplotlib.pyplot as plt
 
@@ -151,11 +152,16 @@ class NPG:
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    npg = NPG(3, 2, 1, 20, 1, 1e-2, 1e-3)
+    N = 4
+    K = 2
+    npg = NPG(N, K, 5, 100, 200, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
     theta, total_rewards = npg.strategy_iteration()
-    print(total_rewards)
-    plt.plot(total_rewards)
-    plt.title("avg rewards per timestep")
-    plt.xlabel("timestep")
-    plt.ylabel("avg rewards")
-    plt.show()
+    
+    eval.evaluate_policy_softmax(N, K, theta)
+    
+    # print(total_rewards)
+    # plt.plot(total_rewards)
+    # plt.title("avg rewards per timestep")
+    # plt.xlabel("timestep")
+    # plt.ylabel("avg rewards")
+    # plt.show()
