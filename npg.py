@@ -16,7 +16,7 @@ class NPG:
         self.lamb = lamb
         self.theta_2 = None
 
-        _, self.idx2state = mdp.get_mappings(self.N, self.K)
+       self.num_states = N * (K + 1) * (K + 1) * (2 ** N) * (2 ** N)
 
         self.total_rewards = []
 
@@ -104,7 +104,7 @@ class NPG:
 
             gradients = []
             for time in range(n):
-                state, action = self.idx2state[trajectory[3 * time]], trajectory[3 * time + 1]
+                state, action = mdp.get_state(trajectory[3 * time]), trajectory[3 * time + 1]
                 phis = utils.extract_features(state, time)
                 gradients.append(self.compute_log_softmax_grad(theta, phis, action))
 

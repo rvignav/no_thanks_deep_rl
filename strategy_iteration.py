@@ -2,7 +2,6 @@ import numpy as np
 import mdp   
 import unittest
 import eval
-from mdp import get_mappings
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -210,8 +209,8 @@ class StrategyIteration:
         self.optimization_method = optimization_method
         self.variant = variant
 
-        state2idx, _ = mdp.get_mappings(self.N, self.K)
-        self.num_states = len(state2idx)+2
+        num_states = N * (K + 1) * (K + 1) * (2 ** N) * (2 ** N)
+        self.num_states = num_states+2
 
         self.prev_policy = np.random.choice([0, 1], size=self.num_states)
 
