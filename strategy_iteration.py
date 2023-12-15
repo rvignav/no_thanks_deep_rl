@@ -3,6 +3,7 @@ import mdp
 import unittest
 import eval
 from mdp import get_mappings
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -123,11 +124,12 @@ class FittedQVI:
         return policy_h
 
 class FittedPI:
-    def __init__(self, N, K, num_iterations, num_pi, num_states, lr=0.001, batch_size=32):
+    def __init__(self, N, K, num_iterations, num_eval_iterations, num_q_iterations, num_states, lr=0.001, batch_size=32):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
-        self.num_pi = num_pi
+        self.num_eval_iterations = num_eval_iterations
+        self.num_q_iterations = num_q_iterations
         self.lr = lr
         self.batch_size = batch_size
         self.num_states = num_states
@@ -158,40 +160,41 @@ class FittedPI:
         optimizer = optim.Adam(q_network.parameters(), lr=self.lr)
         criterion = nn.MSELoss()
 
-        for _ in range(self.num_iterations):
-            for i in range(len(states)):
-                s = states[i]
-                a = actions[i]
-                h = horizons[i]
-                # print(q_targets[i])
-                loss = criterion(q_network(torch.tensor([s, a, h], dtype=torch.float32)), torch.tensor([q_targets[i]], dtype=torch.float32))
+        q_targets = torch.stack([q_targets], dim=1)
 
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+        for _ in range(self.num_q_iterations):
+            optimizer.zero_grad()
+            states, actions, horizons, q_targets = states.detach(), actions.detach(), horizons.detach(), q_targets.detach()
+            outputs = q_network(torch.stack([states, actions, horizons], dim=1))
+            loss = criterion(outputs, q_targets)
+
+            loss.backward()
+            optimizer.step()
 
     def policy_iteration_step(self, prev_policy):
         new_policy = np.random.choice([0, 1], size=self.num_states)
 
-        for k in range(self.num_pi):
+        for k in range(self.num_eval_iterations):
             states, actions, rewards, next_states, horizons = self.rollout(50, new_policy, prev_policy)
 
+            states = torch.tensor(states, dtype=torch.float32)
+            actions = torch.tensor(actions, dtype=torch.float32)
+            horizons = torch.tensor(horizons, dtype=torch.float32)
+            rewards = torch.tensor(rewards, dtype=torch.float32)
+            stacked_tensor = torch.stack([states, actions, horizons], dim=1)
+
             q_network = QNetwork()
-            outputs = []
-            for a, act, c, r in zip(states, actions, horizons, rewards):
-                nn_output = np.max([q_network(torch.tensor([a, b, c], dtype=torch.float32)).detach().numpy() for b in [0, 1]])
-                outputs.append(r + nn_output)
-            q_targets = outputs
+            q_targets = torch.add(rewards, torch.max(q_network(stacked_tensor), dim=1).values)
+
             self.train_q_network(states, actions, horizons, q_targets, q_network)
 
-            # Use the trained Q-network to derive a new policy            
             new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
 
         return new_policy
 
     def fullPI(self):
         policy_h = np.random.choice([0, 1], size=self.num_states)
-        for _ in range(self.num_iterations):
+        for _ in tqdm(range(self.num_iterations)):
             policy_h = self.policy_iteration_step(policy_h)
 
         return policy_h
@@ -222,7 +225,7 @@ class StrategyIteration:
             new_policy = qvi.fullQVI(MDP.H)
 
         elif self.optimization_method == "PI":
-            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_pi = 20, num_states = len(self.prev_policy))
+            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 50, num_q_iterations = 30, num_states = len(self.prev_policy))
             new_policy = fittedpi.fullPI()
 
         self.prev_policy = new_policy
