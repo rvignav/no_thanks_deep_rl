@@ -153,8 +153,8 @@ class NPG:
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    N = 10
-    K = 3
+    N = 5
+    K = 2
     npg = NPG(N, K, 2, 100, 200, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
     theta, total_rewards = npg.strategy_iteration()
     
