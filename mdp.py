@@ -321,4 +321,4 @@ if __name__ == "__main__":
     print("Testing MDP gen with dummy player 2 policy")
     mdp = build_nothanks_mdp(N, K, pi_2)
     print("Succeeded")
-    print(simulate(N, K, [1]*len(idx2state), pi_2))
+    print(simulate(N, K, [1]*len(idx2state), pi_2, 1, variant = True))

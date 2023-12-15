@@ -71,14 +71,13 @@ class FittedQVI:
 
             trajectory = trajectories[i]
 
-            for i in range(0, len(trajectory)-3, 3):
+            for i in range(0, len(trajectory)-2, 3):
                 all_states.append(trajectory[i])
                 all_actions.append(trajectory[i + 1])
                 all_rewards.append(trajectory[i + 2])
-                all_next_states.append(trajectory[i + 3])
                 all_horizons.append(i)
 
-        return np.array(all_states), np.array(all_actions), np.array(all_rewards), np.array(all_next_states), np.array(all_horizons)
+        return np.array(all_states), np.array(all_actions), np.array(all_rewards), np.array(all_horizons)
     
     def train_q_network(self, states, actions, horizons, q_targets, q_network):
         optimizer = optim.Adam(q_network.parameters(), lr=self.lr)
@@ -98,7 +97,7 @@ class FittedQVI:
 
     def iteration_step(self, prev_policy):
         # Rollout to collect data for FQI
-        states, actions, rewards, next_states, horizons = self.rollout(50, prev_policy)
+        states, actions, rewards, horizons = self.rollout(50, prev_policy)
 
         # Train Q-network using FQI
         q_network = QNetwork()
@@ -135,12 +134,12 @@ class FittedPI:
         self.batch_size = batch_size
         self.num_states = num_states
         self.variant = variant
+        self.expert_policy = eval.get_thresh_policy(self.N, self.K)
 
     def rollout(self, num_trajectories, prev_policy, curr_policy):
         all_states = []
         all_actions = []
         all_rewards = []
-        all_next_states = []
         all_horizons = []
 
         #print(self.N, self.K, self.pi_data, prev_policy, num_trajectories)
@@ -149,14 +148,13 @@ class FittedPI:
 
             trajectory = trajectories[i]
 
-            for i in range(0, len(trajectory)-3, 3):
+            for i in range(0, len(trajectory)-2, 3):
                 all_states.append(trajectory[i])
                 all_actions.append(trajectory[i + 1])
                 all_rewards.append(trajectory[i + 2])
-                all_next_states.append(trajectory[i + 3])
                 all_horizons.append(i)
 
-        return np.array(all_states), np.array(all_actions), np.array(all_rewards), np.array(all_next_states), np.array(all_horizons)
+        return np.array(all_states), np.array(all_actions), np.array(all_rewards), np.array(all_horizons)
 
     def train_q_network(self, states, actions, horizons, q_targets, q_network):
         optimizer = optim.Adam(q_network.parameters(), lr=self.lr)
@@ -177,7 +175,7 @@ class FittedPI:
         new_policy = np.random.choice([0, 1], size=self.num_states)
 
         for k in range(self.num_eval_iterations):
-            states, actions, rewards, next_states, horizons = self.rollout(50, new_policy, prev_policy)
+            states, actions, rewards, horizons = self.rollout(100, new_policy, prev_policy)
 
             states = torch.tensor(states, dtype=torch.float32)
             actions = torch.tensor(actions, dtype=torch.float32)
@@ -192,13 +190,16 @@ class FittedPI:
 
             new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
 
-        return new_policy
+        trajectory = self.rollout(50, new_policy, self.expert_policy)
+        reward = np.mean(trajectory[2])
+        return new_policy, reward
 
     def fullPI(self):
         policy_h = np.random.choice([0, 1], size=self.num_states)
         for _ in tqdm(range(self.num_iterations)):
-            policy_h = self.policy_iteration_step(policy_h)
-
+            policy_h, reward = self.policy_iteration_step(policy_h)
+            print(policy_h)
+            print("This is the reward", reward)
         return policy_h
 
 class StrategyIteration:
@@ -228,7 +229,7 @@ class StrategyIteration:
             new_policy = qvi.fullQVI(MDP.H)
 
         elif self.optimization_method == "PI":
-            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 50, num_q_iterations = 30, num_states = len(self.prev_policy), variant = self.variant)
+            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 20, num_q_iterations = 20, num_states = len(self.prev_policy), variant = self.variant)
             new_policy = fittedpi.fullPI()
 
         self.prev_policy = new_policy
@@ -248,10 +249,10 @@ class TestStrategyIteration(unittest.TestCase):
         N = 3
         K = 2
         
-        variant = True
+        variant = False
         
-        num_iterations = 2
-        si = StrategyIteration(N, K, 'QVI', num_iterations, variant)
+        num_iterations = 3
+        si = StrategyIteration(N, K, 'PI', num_iterations, variant)
         pi_1 = si.full_iteration()
         eval.evaluate_policy(N, K, pi_1, variant)
 
