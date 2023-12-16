@@ -1,7 +1,6 @@
 import numpy as np
 import mdp   
 import unittest
-import eval
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -229,7 +228,8 @@ class StrategyIteration:
         self.prev_policy = np.random.choice([0, 1], size=self.num_states)
 
     def iteration_step(self):
-        MDP = mdp.build_nothanks_mdp(self.N, self.K, self.prev_policy)
+        if self.optimization_method == "DP":
+            MDP = mdp.build_nothanks_mdp(self.N, self.K, self.prev_policy)
         new_policy = None
         
         if self.optimization_method == 'DP':
@@ -238,7 +238,7 @@ class StrategyIteration:
         
         elif self.optimization_method == "QVI":
             qvi = FittedQVI(self.N, self.K, num_iterations = 10, pi_data = self.prev_policy, variant = self.variant)
-            new_policy = qvi.fullQVI(MDP.H)
+            new_policy = qvi.fullQVI(int(self.N*(self.K/2+1)))
 
         elif self.optimization_method == "PI":
             fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 20, num_q_iterations = 20, num_states = len(self.prev_policy), variant = self.variant)
@@ -252,26 +252,43 @@ class StrategyIteration:
         self.prev_policy = new_policy
 
     def full_iteration(self):
+        metrics = {}
         for _ in range(self.num_iterations):
             print("Iteration ", _)
             self.iteration_step()
+            
+            mwrd, mwrt, milks = eval.evaluate_policy(self.N, self.K, self.prev_policy, variant=self.variant)
+            metrics[_] = (mwrd, mwrt, milks)
 
-        return self.prev_policy
+        return metrics
 
-class TestStrategyIteration(unittest.TestCase):
-    def test_strategy_iteration(self):
-        """
-        Test that strategy iteration works.
-        """
-        N = 3
-        K = 2
-        
-        variant = True
-        
-        num_iterations = 3
-        si = StrategyIteration(N, K, 'DP', num_iterations, variant)
-        pi_1 = si.full_iteration()
-        eval.evaluate_policy(N, K, pi_1, variant)
 
-if __name__ == '__main__':
-    unittest.main()
+if __name__ == "__main__":
+    metrics = {}
+    for alg in ['DP', 'QVI', 'PI']:
+        for variant in [False, True]:
+            for N in [2, 3, 4, 5]:
+                print("Algorithm ", alg, " variant ", variant)
+                print("N ", N, " K ", 2)
+                K = 2
+                num_iterations = 5
+                si = StrategyIteration(N, K, alg, num_iterations, variant)
+                rewards = si.full_iteration()
+                
+                metrics[(alg, variant, N, K)] = rewards
+                print(rewards)
+    
+    # For each alg, make a line plot of how each metric in rewards changes over iterations (x-axis). Include variant and no variant in plots
+    for alg in ['QVI', 'PI']: # 'DP', 
+        for variant in [False, True]:
+            for N in [2, 3, 4, 5]:
+                rewards = metrics[(alg, variant, N, K)]
+                mwrd = [rewards[i][0] for i in range(len(rewards))]
+                mwrt = [rewards[i][1] for i in range(len(rewards))]
+                
+                import matplotlib.pyplot as plt
+                # plot mwrd and mwrt over iterations, label each line
+                plt.plot(mwrd, label='mwrd')
+                plt.plot(mwrt, label='mwrt')
+                plt.legend()
+                plt.savefig("plots/"+alg+"_"+str(variant)+"_"+str(N)+"_"+str(K)+".png")

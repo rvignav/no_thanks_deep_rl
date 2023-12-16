@@ -1,8 +1,8 @@
 # NPG
-# NPG
 import utils
 import mdp
 import eval
+import numpy as np
 
 import matplotlib.pyplot as plt
 
