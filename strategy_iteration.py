@@ -7,11 +7,13 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
 class DP:
     def __init__(self, MDP):
         self.MDP = MDP
-        
+        self.reward_history = []  # List to store rewards at each iteration
+
     def oneStep(self, prev_V):
         value = self.MDP.R + np.sum(self.MDP.P * prev_V.reshape(1, 1, -1), axis=2)
         policy = np.argmax(value, axis = 0)
@@ -25,10 +27,21 @@ class DP:
 
         for _ in range(horizon):
             prev_V, policy_h = self.oneStep(prev_V)
-        
-        # ONLY RETURNING FIRST TIMESTEP ACTIONS. CHECKED, IT'S NOT STATIONARY
-        
+            total_reward = np.sum(prev_V)  # Calculate total reward at each iteration
+            self.reward_history.append(total_reward)
+            
+        self.plot_reward_progress()
+
+        # Return the final policy
         return policy_h
+
+    def plot_reward_progress(self):
+        plt.plot(self.reward_history, marker='o')
+        plt.title('Reward Improvement Over Iterations')
+        plt.xlabel('Iteration')
+        plt.ylabel('Total Reward')
+        plt.show()
+
 
 class QNetwork(nn.Module):
     """
@@ -195,12 +208,12 @@ class FittedPI:
         return new_policy, reward
 
     def fullPI(self):
+        total_rewards = []
         policy_h = np.random.choice([0, 1], size=self.num_states)
         for _ in tqdm(range(self.num_iterations)):
             policy_h, reward = self.policy_iteration_step(policy_h)
-            print(policy_h)
-            print("This is the reward", reward)
-        return policy_h
+            total_rewards.append(reward)
+        return policy_h, total_rewards
 
 class StrategyIteration:
     def __init__(self, N, K, optimization_method, num_iterations, variant):
@@ -230,8 +243,13 @@ class StrategyIteration:
 
         elif self.optimization_method == "PI":
             fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 20, num_q_iterations = 20, num_states = len(self.prev_policy), variant = self.variant)
-            new_policy = fittedpi.fullPI()
-
+            new_policy, total_rewards = fittedpi.fullPI()
+            # print(total_rewards)
+            # plt.plot(total_rewards)
+            # plt.title("avg rewards per iteration")
+            # plt.xlabel("timestep")
+            # plt.ylabel("avg rewards")
+            # plt.show()
         self.prev_policy = new_policy
 
     def full_iteration(self):
@@ -249,10 +267,10 @@ class TestStrategyIteration(unittest.TestCase):
         N = 3
         K = 2
         
-        variant = False
+        variant = True
         
         num_iterations = 3
-        si = StrategyIteration(N, K, 'PI', num_iterations, variant)
+        si = StrategyIteration(N, K, 'DP', num_iterations, variant)
         pi_1 = si.full_iteration()
         eval.evaluate_policy(N, K, pi_1, variant)
 
