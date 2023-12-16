@@ -225,6 +225,7 @@ class StrategyIteration:
     def iteration_step(self):
         if self.optimization_method == "DP":
             MDP = mdp.build_nothanks_mdp(self.N, self.K, self.prev_policy)
+            self.MDP = MDP
         new_policy = None
         
         if self.optimization_method == 'DP':
@@ -252,17 +253,17 @@ class StrategyIteration:
             print("Iteration ", _)
             self.iteration_step()
             
-            mwrd, mwrt, milks = eval.evaluate_policy(self.N, self.K, self.prev_policy, variant=self.variant)
+            mwrd, mwrt, milks = eval.evaluate_policy(self.N, self.K, self.prev_policy, variant=self.variant, state2idx=self.MDP.state2idx, idx2state=self.MDP.idx2state)
             metrics[_] = (mwrd, mwrt, milks)
 
         return metrics
 
 
 if __name__ == "__main__":
-    N = 4
+    N = 3
     K = 2
     num_iterations = 2
-    si = StrategyIteration(N, K, "QVI", num_iterations, variant=False)
+    si = StrategyIteration(N, K, "DP", num_iterations, variant=False)
     rewards = si.full_iteration()
     print(rewards)
     

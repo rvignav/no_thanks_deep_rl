@@ -2,7 +2,7 @@ from mdp import get_subset, get_subset_index, get_index, get_state
 import numpy as np
 import utils
 
-def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: int = 100, variant=False):
+def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: int = 100, variant=False, state2idx = None, idx2state=None):
     num_games_won = 0
     for i in range(num_games):
         p1_reward = 0
@@ -23,7 +23,10 @@ def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: i
             if curr_state[1] == 0:
                 a = 0
             else:
-                a = pi_1[get_index(curr_state, N, K)]
+                if state2idx is None:
+                    a = pi_1[get_index(curr_state, N, K)]
+                else:
+                    a = pi_1[state2idx[curr_state]]
                                     
             if a == 0:
                 remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
@@ -323,10 +326,10 @@ def run_games_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, n
 def evaluate_policy_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, variant: bool = False):
     print("Percentage of games won ", run_games_softmax(N, K, theta_1, player2strategy, variant=variant))
 
-def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False):
+def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False, state2idx = None, idx2state=None):
     # player2strategy: 1 is threshold, 2 is dummy, 3 is optimal (only use for N=K=2)
-    mwrd = run_games(N, K, pi_1, 2, variant=variant)
-    mwrt = run_games(N, K, pi_1, 1, variant=variant)
+    mwrd = run_games(N, K, pi_1, 2, variant=variant, state2idx=state2idx, idx2state=idx2state)
+    mwrt = run_games(N, K, pi_1, 1, variant=variant, state2idx=state2idx, idx2state=idx2state)
     milks = False # TODO
     
     return mwrd, mwrt, milks
