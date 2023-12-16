@@ -1,4 +1,5 @@
 # NPG
+# NPG
 import utils
 import mdp
 import eval
@@ -27,14 +28,18 @@ class NPG:
         :return: log softmax gradient (shape d x 1)
         """
         return (phis[:, action_idx] - np.sum(phis @ compute_action_distribution(theta, phis).T, axis=1)).reshape(theta.shape)
+        return (phis[:, action_idx] - np.sum(phis @ compute_action_distribution(theta, phis).T, axis=1)).reshape(theta.shape)
 
     def compute_fisher_matrix(self, grads, lamb):
         """ computes the fisher information matrix using the sampled trajectories gradients
 
         :param grads: list of list of gradients, where each sublist represents a trajectory (each gradient has shape d x 1)
         :param lamb: lambda value used for regularization
+        :param lamb: lambda value used for regularization
 
         :return: fisher information matrix (shape d x d)
+
+
 
 
 
@@ -49,6 +54,31 @@ class NPG:
                 grad_sum += grads[n][t] @ grads[n][t].T
             fisher += grad_sum / len(grads[n])
         return fisher / N + lamb * np.eye(d)
+
+
+    # def calculate_fisher_matrix(grads, lamb=1.0):
+    #     """ computes the fisher information matrix using the sampled trajectories gradients
+
+    #     :param grads: list of list of gradients, where each sublist represents a trajectory (each gradient has shape d x 1)
+    #     :param lamb: lambda value used for regularization
+
+    #     :return: fisher information matrix (shape d x d)
+
+
+
+    #     Note: don't forget to take into account that trajectories might have different lengths
+    #     """
+    #     N = len(grads)
+    #     d = grads[0][0].shape[0]
+
+    #     fisher_sum = np.zeros((d, d))
+
+    #     for n in range(N):
+    #         grad_sum = np.sum([np.outer(grad, grad) for grad in grads[n]], axis=0)
+    #         fisher_sum += grad_sum / len(grads[n])
+
+    #     fisher = fisher_sum / N + lamb * np.eye(d)
+    #     return fisher
 
 
     # def calculate_fisher_matrix(grads, lamb=1.0):
@@ -158,13 +188,18 @@ class NPG:
             v_grad = self.compute_value_gradient(grads, rewards)
             eta = self.compute_eta(delta, fisher, v_grad)
 
+
             theta += eta * np.linalg.inv(fisher) @ v_grad
 
+
             episode_rewards.append(np.mean([np.sum(r) for r in rewards]))
+
 
         return theta, episode_rewards
 
     def strategy_iteration(self):
+        self.theta_2 = np.random.rand(100,1)
+        # self.theta_2 = get_thresh_policy(self.N, self.K)
         self.theta_2 = np.random.rand(100,1)
         # self.theta_2 = get_thresh_policy(self.N, self.K)
         self.total_rewards = []
@@ -178,13 +213,13 @@ class NPG:
 
 if __name__ == '__main__':
     np.random.seed(1234)
-    N = 5
+    N = 2
     K = 2
-    npg = NPG(N, K, 2, 100, 200, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
+    npg = NPG(N, K, 2, 10, 20, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
     theta, total_rewards = npg.strategy_iteration()
-    
+
     eval.evaluate_policy_softmax(N, K, theta)
-    
+
     # print(total_rewards)
     # plt.plot(total_rewards)
     # plt.title("avg rewards per timestep")
