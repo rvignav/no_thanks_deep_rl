@@ -42,17 +42,19 @@ class QNetwork(nn.Module):
         # Input layer has 3 neurons
         self.fc1 = nn.Linear(3, 64)
         self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, 1)
+        #self.fc3 = nn.Linear(64, 64)
+        self.fc4 = nn.Linear(64, 1)
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+        #x = torch.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
 
 
 class FittedQVI:
-    def __init__(self, N, K, num_iterations, pi_data, variant, lr=0.001, batch_size=32):
+    def __init__(self, N, K, num_iterations, pi_data, variant, lr=0.0001, batch_size=32):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
@@ -93,14 +95,15 @@ class FittedQVI:
                 h = horizons[i]
                 # print(q_targets[i])
                 loss = criterion(q_network(torch.tensor([s, a, h], dtype=torch.float32)), torch.tensor([q_targets[i]], dtype=torch.float32))
-
+                if i % 10 == 0:
+                    print(i, loss)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
     def iteration_step(self, prev_policy):
         # Rollout to collect data for FQI
-        states, actions, rewards, horizons = self.rollout(50, prev_policy)
+        states, actions, rewards, horizons = self.rollout(480, prev_policy)
 
         # Train Q-network using FQI
         q_network = QNetwork()
@@ -121,13 +124,13 @@ class FittedQVI:
 
     def fullQVI(self, horizon):
         policy_h = self.pi_data
-        for _ in range(horizon):
+        for _ in tqdm(range(horizon)):
             policy_h = self.iteration_step(policy_h)
                 
         return policy_h
 
 class FittedPI:
-    def __init__(self, N, K, num_iterations, num_eval_iterations, num_q_iterations, num_states, variant, lr=0.001, batch_size=32):
+    def __init__(self, N, K, num_iterations, num_eval_iterations, num_q_iterations, num_states, variant, lr=0.00001, batch_size=32):
         self.N = N
         self.K = K
         self.num_iterations = num_iterations
@@ -137,7 +140,7 @@ class FittedPI:
         self.batch_size = batch_size
         self.num_states = num_states
         self.variant = variant
-        self.expert_policy = eval.get_thresh_policy(self.N, self.K)
+        # self.expert_policy = eval.get_thresh_policy(self.N, self.K)
 
     def rollout(self, num_trajectories, prev_policy, curr_policy):
         all_states = []
@@ -165,12 +168,12 @@ class FittedPI:
 
         q_targets = torch.stack([q_targets], dim=1)
 
-        for _ in range(self.num_q_iterations):
+        for i in range(self.num_q_iterations):
             optimizer.zero_grad()
             states, actions, horizons, q_targets = states.detach(), actions.detach(), horizons.detach(), q_targets.detach()
             outputs = q_network(torch.stack([states, actions, horizons], dim=1))
             loss = criterion(outputs, q_targets)
-
+            #print(i, loss)
             loss.backward()
             optimizer.step()
 
@@ -178,7 +181,7 @@ class FittedPI:
         new_policy = np.random.choice([0, 1], size=self.num_states)
 
         for k in range(self.num_eval_iterations):
-            states, actions, rewards, horizons = self.rollout(100, new_policy, prev_policy)
+            states, actions, rewards, horizons = self.rollout(96, new_policy, prev_policy)
 
             states = torch.tensor(states, dtype=torch.float32)
             actions = torch.tensor(actions, dtype=torch.float32)
@@ -193,7 +196,7 @@ class FittedPI:
 
             new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
 
-        trajectory = self.rollout(50, new_policy, self.expert_policy)
+        trajectory = self.rollout(50, new_policy, prev_policy)
         reward = np.mean(trajectory[2])
         return new_policy, reward
 
@@ -233,7 +236,7 @@ class StrategyIteration:
             new_policy = qvi.fullQVI(int(self.N*(self.K/2+1)))
 
         elif self.optimization_method == "PI":
-            fittedpi = FittedPI(self.N, self.K, num_iterations = 20, num_eval_iterations = 20, num_q_iterations = 20, num_states = len(self.prev_policy), variant = self.variant)
+            fittedpi = FittedPI(self.N, self.K, num_iterations = 10, num_eval_iterations = 10, num_q_iterations = 20, num_states = len(self.prev_policy), variant = self.variant)
             new_policy, total_rewards = fittedpi.fullPI()
             # print(total_rewards)
             # plt.plot(total_rewards)
@@ -256,7 +259,7 @@ class StrategyIteration:
 
 
 if __name__ == "__main__":
-    N = 2
+    N = 4
     K = 2
     num_iterations = 2
     si = StrategyIteration(N, K, "QVI", num_iterations, variant=False)
