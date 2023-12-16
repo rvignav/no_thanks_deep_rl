@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import eval
 
 class DP:
     def __init__(self, MDP):
@@ -28,17 +29,8 @@ class DP:
             total_reward = np.sum(prev_V)  # Calculate total reward at each iteration
             self.reward_history.append(total_reward)
             
-        self.plot_reward_progress()
-
         # Return the final policy
         return policy_h
-
-    def plot_reward_progress(self):
-        plt.plot(self.reward_history, marker='o')
-        plt.title('Reward Improvement Over Iterations')
-        plt.xlabel('Iteration')
-        plt.ylabel('Total Reward')
-        plt.show()
 
 
 class QNetwork(nn.Module):
@@ -264,31 +256,40 @@ class StrategyIteration:
 
 
 if __name__ == "__main__":
-    metrics = {}
-    for alg in ['DP', 'QVI', 'PI']:
-        for variant in [False, True]:
-            for N in [2, 3, 4, 5]:
-                print("Algorithm ", alg, " variant ", variant)
-                print("N ", N, " K ", 2)
-                K = 2
-                num_iterations = 5
-                si = StrategyIteration(N, K, alg, num_iterations, variant)
-                rewards = si.full_iteration()
-                
-                metrics[(alg, variant, N, K)] = rewards
-                print(rewards)
+    N = 2
+    K = 2
+    num_iterations = 2
+    si = StrategyIteration(N, K, "QVI", num_iterations, variant=False)
+    rewards = si.full_iteration()
+    print(rewards)
     
-    # For each alg, make a line plot of how each metric in rewards changes over iterations (x-axis). Include variant and no variant in plots
-    for alg in ['QVI', 'PI']: # 'DP', 
-        for variant in [False, True]:
-            for N in [2, 3, 4, 5]:
-                rewards = metrics[(alg, variant, N, K)]
-                mwrd = [rewards[i][0] for i in range(len(rewards))]
-                mwrt = [rewards[i][1] for i in range(len(rewards))]
+    # metrics = {}
+    # for alg in ['QVI']: # DP, PI
+    #     for variant in [False]: # True
+    #         for N in [3]: #, 5
+    #             print("Algorithm ", alg, " variant ", variant)
+    #             print("N ", N, " K ", 2)
+    #             K = 2
+    #             num_iterations = 50
+    #             si = StrategyIteration(N, K, alg, num_iterations, variant)
+    #             rewards = si.full_iteration()
                 
-                import matplotlib.pyplot as plt
-                # plot mwrd and mwrt over iterations, label each line
-                plt.plot(mwrd, label='mwrd')
-                plt.plot(mwrt, label='mwrt')
-                plt.legend()
-                plt.savefig("plots/"+alg+"_"+str(variant)+"_"+str(N)+"_"+str(K)+".png")
+    #             mwrd = [rewards[i][0] for i in range(len(rewards))]
+    #             mwrt = [rewards[i][1] for i in range(len(rewards))]
+                
+    #             import matplotlib.pyplot as plt
+    #             # plot mwrd and mwrt over iterations, label each line
+    #             plt.figure()
+    #             plt.plot(mwrd, label='mwrd')
+    #             plt.plot(mwrt, label='mwrt')
+                
+    #             # even though iterations are 0, 1, ... ticks should be 1, 2, ...
+    #             plt.xticks(range(len(mwrd)), range(1, len(mwrd)+1))
+                
+    #             plt.xlabel("Strategy Iteration")
+    #             plt.ylabel("Mean Win Rate")
+    #             plt.title(f"{alg}, N={N}, K={K}, variant={variant}")
+    #             plt.legend()
+    #             plt.savefig("plots/"+alg+"_"+str(variant)+"_"+str(N)+"_"+str(K)+".png")
+                
+    #             print(rewards)

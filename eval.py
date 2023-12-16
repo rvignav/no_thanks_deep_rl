@@ -14,7 +14,6 @@ def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: i
             cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         c = cards[np.random.randint(len(cards))]
-        print(c)
         curr_state = (c, K/2, K/2, 0, 0)
         
         traj = []
@@ -83,8 +82,9 @@ def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: i
             if curr_state[2] == 0:
                 a = 0
             else:
+                # print(curr_state)
                 if player2strategy == 1:
-                    a = int(get_state(s, N, K)[1] >= int(K/2))
+                    a = int(curr_state[2] >= int(K/2))
                 elif player2strategy == 2:
                     a = np.random.choice(2, p=[0.5, 0.5])
                 else:
@@ -99,7 +99,6 @@ def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: i
                                 a = 1
                     except:
                         a = 0
-                    
                     
                             
             if a == 0:
@@ -154,11 +153,8 @@ def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: i
             traj.append(reward)
             
             p2_reward += reward
-        
-        print("Game ", i, " p1_reward ", p1_reward, " p2_reward ", p2_reward)
-                                
+                                        
         num_games_won += (p1_reward > p2_reward)
-        print(traj)
     
     return num_games_won / num_games
 
@@ -175,7 +171,7 @@ def run_games_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, n
             cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         c = cards[np.random.randint(len(cards))]
-        print(c)
+        # print(c)
         curr_state = (c, K/2, K/2, 0, 0)
         
         traj = []
@@ -319,10 +315,8 @@ def run_games_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, n
             
             p2_reward += reward
         
-        print("Game ", i, " p1_reward ", p1_reward, " p2_reward ", p2_reward)
                                 
         num_games_won += (p1_reward > p2_reward)
-        print(traj)
     
     return num_games_won / num_games
 
@@ -331,8 +325,8 @@ def evaluate_policy_softmax(N: int, K: int, theta_1: list, player2strategy: int 
 
 def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False):
     # player2strategy: 1 is threshold, 2 is dummy, 3 is optimal (only use for N=K=2)
-    mwrt = run_games(N, K, pi_1, 1, variant=variant)
     mwrd = run_games(N, K, pi_1, 2, variant=variant)
+    mwrt = run_games(N, K, pi_1, 1, variant=variant)
     milks = False # TODO
     
     return mwrd, mwrt, milks

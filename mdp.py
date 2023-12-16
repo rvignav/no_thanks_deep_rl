@@ -155,17 +155,18 @@ def get_subset_index(subset, N):
 
 def get_index(curr_state, N, K):
     c, k1, k2, s1, s2 = curr_state
-    return c * K * K * (2 ** N) * (2 ** N) + k1 * K * (2 ** N) * (2 ** N) + k2 * (2 ** N) * (2 ** N) + s1 * (2 ** N) + s2
+    # Map state to number in range [0, N * (K+1) * (K+1) * 2^N * 2^N - 1]
+    return int(c * ((K+1) * (K+1) * (2**N) * (2**N)) + k1 * ((K+1) * (2**N) * (2**N)) + k2 * ((2**N) * (2**N)) + s1 * (2**N) + s2)
 
 def get_state(index, N, K):
-    c = index // (K * K * (2 ** N) * (2 ** N))
-    index %= (K * K * (2 ** N) * (2 ** N))
-    k1 = index // (K * (2 ** N) * (2 ** N))
-    index %= (K * (2 ** N) * (2 ** N))
-    k2 = index // ((2 ** N) * (2 ** N))
-    index %= ((2 ** N) * (2 ** N))
-    s1 = index // (2 ** N)
-    index %= (2 ** N)
+    c = index // ((K+1) * (K+1) * (2**N) * (2**N))
+    index -= c * ((K+1) * (K+1) * (2**N) * (2**N))
+    k1 = index // ((K+1) * (2**N) * (2**N))
+    index -= k1 * ((K+1) * (2**N) * (2**N))
+    k2 = index // ((2**N) * (2**N))
+    index -= k2 * ((2**N) * (2**N))
+    s1 = index // (2**N)
+    index -= s1 * (2**N)
     s2 = index
     return (c, k1, k2, s1, s2)
 
@@ -225,6 +226,7 @@ def simulate(N, K, pi_1, pi_2, num_trajectories, variant=False):
                 a = 0
             else:
                 a = pi_2[get_index(curr_state, N, K)]
+                # a = int(curr_state[2] >= int(K/2))
                             
             if a == 0:
                 remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
