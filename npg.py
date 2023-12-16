@@ -58,55 +58,6 @@ class NPG:
         return fisher / N + lamb * np.eye(d)
 
 
-    # def calculate_fisher_matrix(grads, lamb=1.0):
-    #     """ computes the fisher information matrix using the sampled trajectories gradients
-
-    #     :param grads: list of list of gradients, where each sublist represents a trajectory (each gradient has shape d x 1)
-    #     :param lamb: lambda value used for regularization
-
-    #     :return: fisher information matrix (shape d x d)
-
-
-
-    #     Note: don't forget to take into account that trajectories might have different lengths
-    #     """
-    #     N = len(grads)
-    #     d = grads[0][0].shape[0]
-
-    #     fisher_sum = np.zeros((d, d))
-
-    #     for n in range(N):
-    #         grad_sum = np.sum([np.outer(grad, grad) for grad in grads[n]], axis=0)
-    #         fisher_sum += grad_sum / len(grads[n])
-
-    #     fisher = fisher_sum / N + lamb * np.eye(d)
-    #     return fisher
-
-
-    # def calculate_fisher_matrix(grads, lamb=1.0):
-    #     """ computes the fisher information matrix using the sampled trajectories gradients
-
-    #     :param grads: list of list of gradients, where each sublist represents a trajectory (each gradient has shape d x 1)
-    #     :param lamb: lambda value used for regularization
-
-    #     :return: fisher information matrix (shape d x d)
-
-
-
-    #     Note: don't forget to take into account that trajectories might have different lengths
-    #     """
-    #     N = len(grads)
-    #     d = grads[0][0].shape[0]
-
-    #     fisher_sum = np.zeros((d, d))
-
-    #     for n in range(N):
-    #         grad_sum = np.sum([np.outer(grad, grad) for grad in grads[n]], axis=0)
-    #         fisher_sum += grad_sum / len(grads[n])
-
-    #     fisher = fisher_sum / N + lamb * np.eye(d)
-    #     return fisher
-
     def compute_value_gradient(self, grads, rewards):
         """ computes the value function gradient with respect to the sampled gradients and rewards
 
@@ -201,9 +152,7 @@ class NPG:
 
     def strategy_iteration(self):
         self.theta_2 = np.random.rand(100,1)
-        # self.theta_2 = get_thresh_policy(self.N, self.K)
         self.theta_2 = np.random.rand(100,1)
-        # self.theta_2 = get_thresh_policy(self.N, self.K)
         self.total_rewards = []
 
         for iter in range(self.T):
@@ -221,10 +170,3 @@ if __name__ == '__main__':
     theta, total_rewards = npg.strategy_iteration()
 
     eval.evaluate_policy_softmax(N, K, theta, 3)
-
-    # print(total_rewards)
-    # plt.plot(total_rewards)
-    # plt.title("avg rewards per timestep")
-    # plt.xlabel("timestep")
-    # plt.ylabel("avg rewards")
-    # plt.show()

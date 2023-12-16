@@ -11,7 +11,7 @@ import eval
 class DP:
     def __init__(self, MDP):
         self.MDP = MDP
-        self.reward_history = []  # List to store rewards at each iteration
+        self.reward_history = []
 
     def oneStep(self, prev_V):
         value = self.MDP.R + np.sum(self.MDP.P * prev_V.reshape(1, 1, -1), axis=2)
@@ -26,7 +26,7 @@ class DP:
 
         for _ in range(horizon):
             prev_V, policy_h = self.oneStep(prev_V)
-            total_reward = np.sum(prev_V)  # Calculate total reward at each iteration
+            total_reward = np.sum(prev_V)
             self.reward_history.append(total_reward)
             
         # Return the final policy
@@ -93,19 +93,14 @@ class FittedQVI:
                 s = states[i]
                 a = actions[i]
                 h = horizons[i]
-                # print(q_targets[i])
                 loss = criterion(q_network(torch.tensor([s, a, h], dtype=torch.float32)), torch.tensor([q_targets[i]], dtype=torch.float32))
-                # if i % 10 == 0:
-                    # print(i, loss)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
     def iteration_step(self, prev_policy):
-        # Rollout to collect data for FQI
         states, actions, rewards, horizons = self.rollout(480, prev_policy)
 
-        # Train Q-network using FQI
         q_network = QNetwork()
         
         outputs = []
@@ -113,11 +108,9 @@ class FittedQVI:
             nn_output = np.max([q_network(torch.tensor([a, b, c], dtype=torch.float32)).detach().numpy() for b in [0, 1]])
             outputs.append(r + nn_output)
         q_targets = outputs
-        # q_targets = rewards + np.amax(q_network(torch.tensor([states, actions, horizons]).detach().numpy(), axis=1)
 
         self.train_q_network(states, actions, horizons, q_targets, q_network)
 
-        # Use the trained Q-network to derive a new policy
         new_policy = [np.argmax([q_network(torch.tensor([s, a, 0], dtype=torch.float32)).detach().numpy() for a in [0, 1]]) for s in range(self.num_states)]
 
         return new_policy
@@ -140,7 +133,6 @@ class FittedPI:
         self.batch_size = batch_size
         self.num_states = num_states
         self.variant = variant
-        # self.expert_policy = eval.get_thresh_policy(self.N, self.K)
 
     def rollout(self, num_trajectories, prev_policy, curr_policy):
         all_states = []
@@ -148,7 +140,6 @@ class FittedPI:
         all_rewards = []
         all_horizons = []
 
-        #print(self.N, self.K, self.pi_data, prev_policy, num_trajectories)
         trajectories = mdp.simulate(self.N, self.K, curr_policy, prev_policy, num_trajectories, self.variant)
         for i in range(num_trajectories):
 
@@ -173,7 +164,6 @@ class FittedPI:
             states, actions, horizons, q_targets = states.detach(), actions.detach(), horizons.detach(), q_targets.detach()
             outputs = q_network(torch.stack([states, actions, horizons], dim=1))
             loss = criterion(outputs, q_targets)
-            #print(i, loss)
             loss.backward()
             optimizer.step()
 
@@ -239,12 +229,6 @@ class StrategyIteration:
         elif self.optimization_method == "PI":
             fittedpi = FittedPI(self.N, self.K, num_iterations = 10, num_eval_iterations = 10, num_q_iterations = 20, num_states = len(self.prev_policy), variant = self.variant)
             new_policy, total_rewards = fittedpi.fullPI()
-            # print(total_rewards)
-            # plt.plot(total_rewards)
-            # plt.title("avg rewards per iteration")
-            # plt.xlabel("timestep")
-            # plt.ylabel("avg rewards")
-            # plt.show()
         self.prev_policy = new_policy
 
     def full_iteration(self):
@@ -266,38 +250,6 @@ if __name__ == "__main__":
     N = 2
     K = 2
     num_iterations = 2
-    si = StrategyIteration(N, K, "QVI", num_iterations, variant=False)
+    si = StrategyIteration(N, K, "PI", num_iterations, variant=False)
     rewards = si.full_iteration()
     print(rewards)
-    
-    
-    # metrics = {}
-    # for alg in ['QVI']: # DP, PI
-    #     for variant in [False]: # True
-    #         for N in [3]: #, 5
-    #             print("Algorithm ", alg, " variant ", variant)
-    #             print("N ", N, " K ", 2)
-    #             K = 2
-    #             num_iterations = 50
-    #             si = StrategyIteration(N, K, alg, num_iterations, variant)
-    #             rewards = si.full_iteration()
-                
-    #             mwrd = [rewards[i][0] for i in range(len(rewards))]
-    #             mwrt = [rewards[i][1] for i in range(len(rewards))]
-                
-    #             import matplotlib.pyplot as plt
-    #             # plot mwrd and mwrt over iterations, label each line
-    #             plt.figure()
-    #             plt.plot(mwrd, label='mwrd')
-    #             plt.plot(mwrt, label='mwrt')
-                
-    #             # even though iterations are 0, 1, ... ticks should be 1, 2, ...
-    #             plt.xticks(range(len(mwrd)), range(1, len(mwrd)+1))
-                
-    #             plt.xlabel("Strategy Iteration")
-    #             plt.ylabel("Mean Win Rate")
-    #             plt.title(f"{alg}, N={N}, K={K}, variant={variant}")
-    #             plt.legend()
-    #             plt.savefig("plots/"+alg+"_"+str(variant)+"_"+str(N)+"_"+str(K)+".png")
-                
-    #             print(rewards)

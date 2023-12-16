@@ -85,7 +85,6 @@ def run_games(N: int, K: int, pi_1: list, player2strategy: int = 1, num_games: i
             if curr_state[2] == 0:
                 a = 0
             else:
-                # print(curr_state)
                 if player2strategy == 1:
                     a = int(curr_state[2] >= int(K/2))
                 elif player2strategy == 2:
@@ -174,7 +173,6 @@ def run_games_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, n
             cards = list(np.random.choice(cards, len(cards)-num_to_remove, replace=False))
         
         c = cards[np.random.randint(len(cards))]
-        # print(c)
         curr_state = (c, K/2, K/2, 0, 0)
         
         traj = []
@@ -329,7 +327,7 @@ def evaluate_policy_softmax(N: int, K: int, theta_1: list, player2strategy: int 
 def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False, state2idx = None, idx2state=None):
     # player2strategy: 1 is threshold, 2 is dummy, 3 is optimal (only use for N=K=2)
     mwrd = run_games(N, K, pi_1, 3, variant=variant, state2idx=state2idx, idx2state=idx2state)
-    # mwrt = run_games(N, K, pi_1, 1, variant=variant, state2idx=state2idx, idx2state=idx2state)
+    mwrt = run_games(N, K, pi_1, 1, variant=variant, state2idx=state2idx, idx2state=idx2state)
     milks = False # TODO
     
-    return mwrd, 0, milks
+    return mwrd, mwrt, milks

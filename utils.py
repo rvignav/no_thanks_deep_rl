@@ -22,16 +22,6 @@ def extract_features(s, h):
     return feats
 
 
-# def extract_features(s, h):
-#     feats = []
-#     for a in [0, 1]:
-#         # copy s
-#         sc = list(s)
-#         sc.append(a)
-#         sc.append(h)
-#         feats.append(sc)
-#     return np.array(feats).T
-
 def compute_softmax(logits, axis):
     """ computes the softmax of the logits
 

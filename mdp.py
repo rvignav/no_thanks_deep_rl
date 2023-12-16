@@ -226,7 +226,6 @@ def simulate(N, K, pi_1, pi_2, num_trajectories, variant=False):
                 a = 0
             else:
                 a = pi_2[get_index(curr_state, N, K)]
-                # a = int(curr_state[2] >= int(K/2))
                             
             if a == 0:
                 remaining_cards = list(set(cards) - set(get_subset(curr_state[3], N)) - set(get_subset(curr_state[4], N)) - set([curr_state[0]]))
