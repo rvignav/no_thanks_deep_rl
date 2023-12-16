@@ -1,14 +1,36 @@
 import numpy as np
+from sklearn.kernel_approximation import RBFSampler
+
+rbf_feature = RBFSampler(gamma=1, random_state=12345, n_components = 100)
+
 
 def extract_features(s, h):
-    feats = []
-    for a in [0, 1]:
-        # copy s
-        sc = list(s)
-        sc.append(a)
-        sc.append(h)
-        feats.append(sc)
-    return np.array(feats).T
+    """ This function computes the RFF features for a state for all the discrete actions
+
+    :param state: column vector of the state we want to compute phi(s,a) of (shape |S|x1)
+    :param num_actions: number of discrete actions you want to compute the RFF features for
+    :return: phi(s,a) for all the actions (shape 100x|num_actions|)
+    """
+    s = np.array(s)
+    s = s.reshape(1, -1)
+    s = np.repeat(s, 2, 0)
+    a = np.arange(0, 2).reshape(-1, 1)
+    sa = np.concatenate([s,a], -1)
+    sah = np.concatenate([sa, np.array([[h], [h]])], -1)
+    feats = rbf_feature.fit_transform(sah)
+    feats = feats.T
+    return feats
+
+
+# def extract_features(s, h):
+#     feats = []
+#     for a in [0, 1]:
+#         # copy s
+#         sc = list(s)
+#         sc.append(a)
+#         sc.append(h)
+#         feats.append(sc)
+#     return np.array(feats).T
 
 def compute_softmax(logits, axis):
     """ computes the softmax of the logits

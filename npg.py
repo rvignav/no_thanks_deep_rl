@@ -1,4 +1,4 @@
-import numpy as np
+# NPG
 import utils
 import mdp
 import eval
@@ -16,8 +16,6 @@ class NPG:
         self.lamb = lamb
         self.theta_2 = None
 
-        _, self.idx2state = mdp.get_mappings(self.N, self.K)
-
         self.total_rewards = []
 
     def compute_log_softmax_grad(self, theta, phis, action_idx):
@@ -28,17 +26,17 @@ class NPG:
         :param action_idx: The index of the action you want to compute the gradient of theta with respect to
         :return: log softmax gradient (shape d x 1)
         """
-        return (phis[:, action_idx] - np.sum(phis @ utils.compute_action_distribution(theta, phis).T, axis=1)).reshape(theta.shape)
+        return (phis[:, action_idx] - np.sum(phis @ compute_action_distribution(theta, phis).T, axis=1)).reshape(theta.shape)
 
     def compute_fisher_matrix(self, grads, lamb):
         """ computes the fisher information matrix using the sampled trajectories gradients
 
         :param grads: list of list of gradients, where each sublist represents a trajectory (each gradient has shape d x 1)
-        :param lamb: lambda value used for regularization 
+        :param lamb: lambda value used for regularization
 
         :return: fisher information matrix (shape d x d)
-        
-        
+
+
 
         Note: don't forget to take into account that trajectories might have different lengths
         """
@@ -52,6 +50,31 @@ class NPG:
             fisher += grad_sum / len(grads[n])
         return fisher / N + lamb * np.eye(d)
 
+
+    # def calculate_fisher_matrix(grads, lamb=1.0):
+    #     """ computes the fisher information matrix using the sampled trajectories gradients
+
+    #     :param grads: list of list of gradients, where each sublist represents a trajectory (each gradient has shape d x 1)
+    #     :param lamb: lambda value used for regularization
+
+    #     :return: fisher information matrix (shape d x d)
+
+
+
+    #     Note: don't forget to take into account that trajectories might have different lengths
+    #     """
+    #     N = len(grads)
+    #     d = grads[0][0].shape[0]
+
+    #     fisher_sum = np.zeros((d, d))
+
+    #     for n in range(N):
+    #         grad_sum = np.sum([np.outer(grad, grad) for grad in grads[n]], axis=0)
+    #         fisher_sum += grad_sum / len(grads[n])
+
+    #     fisher = fisher_sum / N + lamb * np.eye(d)
+    #     return fisher
+
     def compute_value_gradient(self, grads, rewards):
         """ computes the value function gradient with respect to the sampled gradients and rewards
 
@@ -61,7 +84,7 @@ class NPG:
         """
         reward_totals = [np.sum(r) for r in rewards]
         b = np.sum(reward_totals) / len(reward_totals)
-        
+
         value_grad = np.zeros(grads[0][0].shape)
         for n in range(len(grads)):
             grad_sum = np.zeros(grads[0][0].shape)
@@ -104,8 +127,8 @@ class NPG:
 
             gradients = []
             for time in range(n):
-                state, action = self.idx2state[trajectory[3 * time]], trajectory[3 * time + 1]
-                phis = utils.extract_features(state, time)
+                state, action = mdp.get_state(trajectory[3 * time], self.N, self.K), trajectory[3 * time + 1]
+                phis = extract_features(state, time)
                 gradients.append(self.compute_log_softmax_grad(theta, phis, action))
 
             trajectories_gradients.append(gradients)
@@ -124,7 +147,8 @@ class NPG:
             theta: the trained model parameters
             avg_episodes_rewards: list of average rewards for each time step
         """
-        theta = np.random.rand(7,1)
+        # theta = self.theta_2
+        theta = np.random.rand(100,1)
 
         episode_rewards = []
 
@@ -133,15 +157,16 @@ class NPG:
             fisher = self.compute_fisher_matrix(grads, lamb)
             v_grad = self.compute_value_gradient(grads, rewards)
             eta = self.compute_eta(delta, fisher, v_grad)
-            
+
             theta += eta * np.linalg.inv(fisher) @ v_grad
-            
+
             episode_rewards.append(np.mean([np.sum(r) for r in rewards]))
-        
+
         return theta, episode_rewards
 
     def strategy_iteration(self):
-        self.theta_2 = np.random.rand(7,1)
+        self.theta_2 = np.random.rand(100,1)
+        # self.theta_2 = get_thresh_policy(self.N, self.K)
         self.total_rewards = []
 
         for iter in range(self.T):
