@@ -329,16 +329,10 @@ def run_games_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, n
 def evaluate_policy_softmax(N: int, K: int, theta_1: list, player2strategy: int = 1, variant: bool = False):
     print("Percentage of games won ", run_games_softmax(N, K, theta_1, player2strategy, variant=variant))
 
-def evaluate_policy(N: int, K: int, pi_1: list, player2strategy: int = 1, variant: bool = False):
+def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False):
     # player2strategy: 1 is threshold, 2 is dummy, 3 is optimal (only use for N=K=2)
-    print("Percentage of games won ", run_games(N, K, pi_1, player2strategy, variant=variant))
+    mwrt = run_games(N, K, pi_1, 1, variant=variant)
+    mwrd = run_games(N, K, pi_1, 2, variant=variant)
+    milks = False # TODO
     
-    # Check if pi_1 does milking + setting a threshold for NoThanks variant
-    # for i in range(len(pi_1)-2):
-    
-    # check if actions are only dependent on c, k1, k2
-    
-    # MAKE SOME PLOTS
-    
-    # Win rate against dummy (randomly initialized) policy, against setting a threshold, 
-    # against hard-coded thresh+milk, and against optimal when we know it
+    return mwrd, mwrt, milks
