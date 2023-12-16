@@ -328,8 +328,8 @@ def evaluate_policy_softmax(N: int, K: int, theta_1: list, player2strategy: int 
 
 def evaluate_policy(N: int, K: int, pi_1: list, variant: bool = False, state2idx = None, idx2state=None):
     # player2strategy: 1 is threshold, 2 is dummy, 3 is optimal (only use for N=K=2)
-    mwrd = run_games(N, K, pi_1, 2, variant=variant, state2idx=state2idx, idx2state=idx2state)
-    mwrt = run_games(N, K, pi_1, 1, variant=variant, state2idx=state2idx, idx2state=idx2state)
+    mwrd = run_games(N, K, pi_1, 3, variant=variant, state2idx=state2idx, idx2state=idx2state)
+    # mwrt = run_games(N, K, pi_1, 1, variant=variant, state2idx=state2idx, idx2state=idx2state)
     milks = False # TODO
     
-    return mwrd, mwrt, milks
+    return mwrd, 0, milks

@@ -4,6 +4,8 @@ import mdp
 import eval
 import numpy as np
 
+from utils import extract_features, compute_softmax, compute_action_distribution
+
 import matplotlib.pyplot as plt
 
 class NPG:
@@ -218,7 +220,7 @@ if __name__ == '__main__':
     npg = NPG(N, K, 2, 10, 20, 1e-2, 1e-3) # N, K, T = num strategy iterations, I = num NPG iterations, J = num rollouts
     theta, total_rewards = npg.strategy_iteration()
 
-    eval.evaluate_policy_softmax(N, K, theta)
+    eval.evaluate_policy_softmax(N, K, theta, 3)
 
     # print(total_rewards)
     # plt.plot(total_rewards)

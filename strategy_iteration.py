@@ -95,8 +95,8 @@ class FittedQVI:
                 h = horizons[i]
                 # print(q_targets[i])
                 loss = criterion(q_network(torch.tensor([s, a, h], dtype=torch.float32)), torch.tensor([q_targets[i]], dtype=torch.float32))
-                if i % 10 == 0:
-                    print(i, loss)
+                # if i % 10 == 0:
+                    # print(i, loss)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -253,19 +253,23 @@ class StrategyIteration:
             print("Iteration ", _)
             self.iteration_step()
             
-            mwrd, mwrt, milks = eval.evaluate_policy(self.N, self.K, self.prev_policy, variant=self.variant, state2idx=self.MDP.state2idx, idx2state=self.MDP.idx2state)
+            try:
+                mwrd, mwrt, milks = eval.evaluate_policy(self.N, self.K, self.prev_policy, variant=self.variant, state2idx=self.MDP.state2idx, idx2state=self.MDP.idx2state)
+            except:
+                mwrd, mwrt, milks = eval.evaluate_policy(self.N, self.K, self.prev_policy, variant=self.variant)
             metrics[_] = (mwrd, mwrt, milks)
 
         return metrics
 
 
 if __name__ == "__main__":
-    N = 3
+    N = 2
     K = 2
     num_iterations = 2
-    si = StrategyIteration(N, K, "DP", num_iterations, variant=False)
+    si = StrategyIteration(N, K, "QVI", num_iterations, variant=False)
     rewards = si.full_iteration()
     print(rewards)
+    
     
     # metrics = {}
     # for alg in ['QVI']: # DP, PI
